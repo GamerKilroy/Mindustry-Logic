@@ -1,0 +1,45 @@
+# Atrax EMP Logic Package
+# Author: Kilroy
+# Binds to Atrax EMPs
+# Will move to the RNG waypoint before switching to factory attack
+# Has tremendous range, probably requiring RTS strategies to take down.
+
+ubind @dp-krl-atrax-emp ## Binds to the Quasar-JMP
+
+read currentRNG cell1 42 #Reads current RNG Waypoint
+op mul MBX 2 currentRNG
+op mul MBY 2 currentRNG
+op add MBY MBY 1
+read waypointX cell1 MBX
+read waypointY cell1 MBY
+
+sensor waypointRun @flag @unit
+jump isOut equal waypointRun true #Check if already out of base
+
+ucontrol move waypointX waypointY #Move to random waypoint, then set you're outside.
+ucontrol within waypointX waypointY 2 isAtWaypoint
+jump isOut equal isAtWaypoint true
+end
+
+isOut:
+
+ucontrol flag true
+
+ulocate building factory enemy @copper factX factY isFact fact #find the closest enemy factory
+uradar enemy any any distance 1 enemyUnit
+sensor enemyX @x enemyUnit
+sensor enemyY @y enemyUnit
+ucontrol within enemyX enemyY 8 isInPDS
+jump PDSShoot equal isInPDS true
+
+ucontrol within factX factY 40 isCloseToFact #If we're close to a turret, then prepare to Boost
+jump inRange equal isCloseToFact true
+ucontrol targetp fact 0
+ucontrol approach factX factY 38
+end
+inRange:
+ucontrol targetp fact 1
+end
+
+PDSShoot:
+ucontrol targetp enemyUnit 1

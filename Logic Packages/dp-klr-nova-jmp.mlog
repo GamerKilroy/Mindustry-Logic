@@ -1,0 +1,44 @@
+# Nova JMP Logic Package
+# Author: Kilroy
+# Binds to all Nova-JMP
+# Needs binding to Quasar-JMP processor!
+# Units are spawned by Quasar-JMP
+# Units simply follow Quasar-JMP closely and attack targets in range.
+# When Quasar-JMP calls for a boost, they boost.
+
+ubind @dp-klr-nova-jmp
+read leader processor1 "extReference"
+sensor isLeaderDead leader @dead
+jump doLoop notEqual isLeaderDead true
+ucontrol unbind
+end
+
+doLoop: 
+sensor leaderX leader @x
+sensor leaderY leader @y
+sensor leaderBoost leader @boosting
+sensor leaderCycle leader @flag
+
+ucontrol boost leaderBoost
+jump noBuff notEqual leaderCycle 10
+status true fast @unit 60
+noBuff:
+
+ucontrol approach leaderX leaderY 2
+
+ulocate building turret true @copper turretX turretY isTurret turret #find the closest enemy turret
+ulocate building factory true @copper factX factY isFact fact #find the closest enemy factory
+
+shootCycle:
+    ucontrol within turretX turretY 6 shootTurret # If we're in front of a turret, shoot that.
+    jump noTurret equal shootTurret false
+    ucontrol targetp turret 1
+    end
+    noTurret:
+    ucontrol within factX factY 6 shootFact # If we're in front of a factory, shoot that.
+    jump noFact equal shootFact false
+    ucontrol targetp fact 1
+    end
+    noFact:
+    ucontrol target 0 0 false
+    end

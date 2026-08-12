@@ -1,0 +1,125 @@
+# Quasar JMP Logic Package
+# Author: Kilroy
+# Binds to THE Quasar-JMP (Max 1!!!)
+# Spawns all necessary Nova-JMP on spawn. (Wave number / 2)
+# Quasar-JMP and all units spawned will boost to the saved waypoint.
+# They will then target production complexes
+# If they get in range of a turret (30 tiles), they will regroup
+# After regrouping, they will Boost together up to 4 tiles away from the turret.
+
+ubind @dp-klr-quasar-jmp ## Binds to the Quasar-JMP
+
+set extReference @unit
+sensor currState @unit @flag
+
+jump init equal currState 0
+jump spawn equal currState 1
+jump boost_waypoint equal currState 2
+jump roaming equal currState 3
+jump do_jump equal currState 10
+end
+
+init:
+    read currentRNG cell1 41 #Reads current RNG Waypoint and converts from Memory Cell
+    op mul MBX 2 currentRNG
+    op mul MBY 2 currentRNG
+    op add MBY MBY 1
+    read waypointX cell1 MBX
+    read waypointY cell1 MBY
+    ucontrol flag 1
+    end
+
+spawn:
+    op idiv toSpawn @waveNumber 2
+    sensor hereX @unit @x
+    sensor hereY @unit @y
+    
+    doSpawn:
+    spawn @dp-klr-nova-jmp hereX hereY 0 @crux newUnit 0 
+    op sub toSpawn toSpawn 1
+    wait 1
+    jump doSpawn greaterThan toSpawn 0
+
+    ucontrol flag 2
+    end
+
+boost_waypoint:
+    ucontrol boost true
+    write true cell1 51
+    ucontrol approach waypointX waypointY 3
+    ucontrol within waypointX waypointY 4 isOK
+    jump boost_waypoint_notok equal isOK false
+    ucontrol boost false
+    write false cell1 51
+    ucontrol flag 3
+    boost_waypoint_notok:
+    end
+
+roaming:
+    ulocate building core true @copper coreX coreY isCore core #Locate the enemy core
+    ulocate building turret true @copper turretX turretY isTurret turret #find the closest enemy turret
+    uradar enemy any any distance 0 1 enemyUnit #See if there are enemy units
+
+    jump noTurret equal isTurret false #If no turrets found, go for core.
+
+    ucontrol within turretX turretY 50 isCloseToTurret #If we're close to a turret, then aim for that.
+    jump noTurret equal isCloseToTurret false
+        set currTarget turret
+        set targetX turretX
+        set targetY turretY
+        ucontrol within turretX turretY 10 isCloseToTurret
+        jump tooClose equal isCloseToTurret true
+        ucontrol flag 10
+        end
+        tooClose:
+        ucontrol boost false
+        jump shootCycle always 0 0
+
+    noTurret: #If no turret or too far
+    ucontrol within coreX coreY 40 isCloseToCore #If we're close to a core, then aim for that.
+    jump noCore equal isCloseToCore false
+        set currTarget core
+        set targetX coreX
+        set targetY coreY
+        ucontrol within coreX coreY 10 isCloseToCore
+        jump justWinlol equal isCloseToCore true
+        ucontrol flag 10
+        end
+        justWinlol:
+        ucontrol boost false
+        jump shootCycle always 0 0
+
+    noCore:
+    set targetX 9999
+    set targetY 9999
+    shootCycle:
+        
+        sensor unitX enemyUnit @x 
+        sensor unitY enemyUnit @y
+        ucontrol within unitX unitY 100 isPDSneeded
+        ucontrol targetp enemyUnit isPDSneeded
+        ucontrol within targetX targetY 10 isCloseToTarget # If we're in range of a turret, stop and shoot that. No other worries.
+        jump approachTarget notEqual isCloseToTarget true
+            ucontrol approach targetX targetY 1
+            ucontrol target targetX targetY 1
+            end
+
+        approachTarget: # If we're not, then stop shooting the target 
+        ucontrol boost true
+        ucontrol autoPathfind
+    end
+
+do_jump:
+    ucontrol boost true
+    write true cell1 51
+    write true cell1 50
+    status true fast @unit 3
+    ucontrol approach targetX targetY 6
+    ucontrol within targetX targetY 7 isOK
+    jump do_jump_notok equal isOK false
+    ucontrol boost false
+    write false cell1 51
+    write false cell1 50
+    ucontrol flag 3
+    do_jump_notok:
+    end

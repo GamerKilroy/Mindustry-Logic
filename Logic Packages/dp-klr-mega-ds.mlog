@@ -1,0 +1,95 @@
+# Mega-DS Logic Package
+# Author: Kilroy
+# Binds to all Mega-DS
+# Moves all Mega-DS to Pickup Point, then spawns a unit for them to pickup.
+# Mega-DS move directly to core and drop off their units, then return back and spawn more.
+# Only has PDS
+# No limit on spawns.
+
+setrate 50
+
+ubind @dp-klr-mega-ds
+sensor currStep @unit @flag
+
+uradar ally ground any health 0 0 healTarget #See if there are enemy units
+jump no_heals equal healTarget null
+ucontrol targetp healTarget 1
+jump main always 0 0
+no_heals:
+ucontrol target 0 0 0
+
+main:
+jump init equal currStep 0
+jump move_pickup equal currStep 1
+jump pickup equal currStep 2
+jump move_int_dropoff equal currStep 3
+jump move_dropoff equal currStep 4
+jump dropoff equal currStep 5
+jump move_int_pickup equal currStep 6
+end
+
+init:
+    ucontrol flag 1
+    sensor intPathX @unit @x
+    sensor intPathY @unit @y
+    ulocate building core true @copper coreX coreY isCore core #Locate the enemy core
+    ulocate building repair false @copper pickupX pickupY isRepair
+    op add pickupX pickupX 2
+    op add pickupY pickupY 2
+    end
+
+move_pickup:
+    ucontrol approach pickupX pickupY 4 #Otherwise, move to pickup
+    ucontrol within pickupX pickupY 4 isOK
+    jump move_pickup_notok equal isOK false
+    ucontrol flag 2
+    move_pickup_notok:
+    end
+
+pickup:
+    sensor hereX @unit @x
+    sensor hereY @unit @y
+    
+    spawn @atrax hereX hereY 0 @crux newUnit 0 
+    pickup_notok:
+    sensor unitX newUnit @x
+    sensor unitY newUnit @y
+    ucontrol move unitX unitY
+    ucontrol payTake @atrax
+    sensor isOK @unit @payloadCount
+    jump pickup_notok equal isOK false
+    ucontrol flag 3
+    end
+
+move_int_dropoff:
+    ucontrol approach intPathX intPathY 40
+    ucontrol within intPathX intPathY 40 isOK
+    jump move_int_dropoff_notok equal isOK false
+    ucontrol flag 4
+    move_int_dropoff_notok:
+    end
+
+move_dropoff:
+    ucontrol approach coreX coreY 10
+    ucontrol within coreX coreY 10 isOK
+    jump move_dropoff_notok equal isOK false
+    ucontrol flag 5
+    set lastSecond @second
+    move_dropoff_notok:
+    end
+
+dropoff:
+    ucontrol payDrop
+    op sub waitTime @second lastSecond 
+    jump dropoff_notok lessThan waitTime 3
+    ucontrol flag 6
+    dropoff_notok:
+    end
+
+move_int_pickup:
+    ucontrol approach intPathX intPathY 40
+    ucontrol within intPathX intPathY 40 isOK
+    jump move_int_pickup_notok equal isOK false
+    ucontrol flag 1
+    move_int_pickup_notok:
+    end

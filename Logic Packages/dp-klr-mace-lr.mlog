@@ -1,0 +1,50 @@
+# Mace-LR Logic package
+# Author: Kilroy
+# Binds to all Mace-LR, adds keep at range logic.
+# Will focus on turrets if they're within 40 tiles
+# Has PDS while moving
+
+ubind @dp-klr-mace-lr
+
+ulocate building core true @copper coreX coreY isCore core #Locate the enemy core
+ulocate building turret true @copper turretX turretY isTurret turret #find the closest enemy turret
+uradar enemy any any distance 0 1 enemyUnit #See if there are enemy units
+
+jump noTurret equal isTurret false #If no turrets found, go for core.
+
+ucontrol within turretX turretY 30 isCloseToTurret #If we're close to a turret, then aim for that.
+jump noTurret equal isCloseToTurret false
+    set currTarget turret
+    set targetX turretX
+    set targetY turretY
+    jump shootCycle always 0 0
+
+noTurret: #If no turret or too far
+ucontrol within coreX coreY 40 isCloseToCore #If we're close to a core, then aim for that.
+jump noCore equal isCloseToCore false
+    set currTarget core
+    set targetX coreX
+    set targetY coreY
+    jump shootCycle always 0 0
+
+noCore:
+set targetX 9999
+set targetY 9999
+shootCycle:
+    
+    sensor unitX enemyUnit @x 
+    sensor unitY enemyUnit @y 
+    ucontrol within unitX unitY 100 isPDSneeded
+    ucontrol targetp enemyUnit isPDSneeded
+    ucontrol within targetX targetY 13 isCloseToTarget # If we're in range of a turret, stop and shoot that. No other worries.
+    jump approachTarget equal isCloseToTarget false
+        ucontrol idle
+        ucontrol target targetX targetY 1
+        end
+
+    approachTarget: # If we're not, then stop shooting the target 
+    jump acceptAuto equal isCloseToTurret false
+        ucontrol pathfind turretX turretY
+        end
+    acceptAuto:
+    ucontrol autoPathfind

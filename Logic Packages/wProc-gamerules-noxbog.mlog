@@ -1,0 +1,187 @@
+# Main GameRules wProc for Noxious Bog
+# Author: Kilroy
+#
+# Custom Enemies used:
+# X   klr-fury-lr : A Fury Variant equipped with dual gatlings. Custom logic to stay at range and use PDS. Focusses Turrets.
+# X  klr-mega-ds : A Mega Variant that sacrifices firepower for agility and a shield generator. Specialized in Payload dropping. Focusses the CORE.
+# X  klr-quasar-jmp : A Quasar Variant with Arc Cannons and increased boost speed. Has a shield generator and repair point. Will summon klr-nova-jmp on spawn and syncronize boosts between them to get behind turrets. Focussed Turrets.
+# X  klr-nova-jmp : Spawned by Quasar-JMP and equipped with an arc shotgun and increased boost speed, this unit is designed to jump with klr-nova-jmp for protection. Is fast, but doesn't have many resistances.
+# X  klr-fortress-ml : Equipped with chain shotguns and slagthrowers, the Fortress ML relies on vanilla pathfinding and raw stats to overwhelm the opponent.
+# X  klr-mono-hp : A Mono equipped with a repair beam. Will focus the highest HP unit on the battlefield and constantly repair.
+# X  klr-atrax-emp : An Atrax equipped with long range, EMP artillery and small PDS. Will not move towards the frontline, instead focussing on powergrid complexes after travelling to map waypoints. May need RTS control.
+#   klr-poly-emp : A Poly with an attached arc cannon. Very fast and devastatingly effective. Focusses powergrid.
+#   klr-minke-np : [GUARDIAN] A Minke variant with a long range artillery cannon that leaves slug puddles on the ground. Stays on the outskirs. May need RTS control.
+#   klr-bryde-ac: [GUARDIAN] A Bryde variant focussing on Area Denial. With a lot of PDS and an a devastating slag cannon, it spells devastation for all production complexes near the coast.
+#   klr-scepter-cr : [GUARDIAN] A modified Scepter with a Fighter Bay, will constantly spawn klr-poly-emp. Has several chain shotguns, making it devastating on close engagements. Is also equipped with an Arc Cannon that will focus incoming units.
+#
+# Memory Cell Shared between all wProcessors that manages world events, gamerules and waypoint coordinates.
+# World Events:
+#   At Mid Wave, spawn the First Guardian. It will destroy a rock blocking the river, allowing water units access to the internal waters of the map. It has it's own cutscene.
+#      The blast will also spawn debris blocks and some minimal, Thorium patches. 
+#
+# Memory Cell:
+# 0-1 Waypoint 1 X/Y
+# 2-3 Waypoint 2 X/Y
+# 4-5 Waypoint 3 X/Y
+# 6-7 Waypoint 4 X/Y
+# 8-9 Waypoint 5 X/Y
+# 10-11 Waypoint 6 X/Y
+#
+# 30 isRockBlown
+#
+# 40 is ID of Mega-DS spawns
+# 41 is Waypoint Target for Quasar-JMP
+# 42 is Waypoint Target for Atrax-EMP
+#
+# 50 is Quasar-JMP Regroup
+# 51 is Quasar-JMP Boost
+
+
+# Defines waypoints in memory cell.
+write 100 cell1 0
+write 80 cell1 1
+write 150 cell1 2
+write 50 cell1 3
+write x3 cell1 4
+write y3 cell1 5
+write x4 cell1 6
+write y4 cell1 7
+write x5 cell1 8
+write y5 cell1 9
+write x6 cell1 10
+write y6 cell1 11
+
+write @atrax cell1 40
+
+jump noRNGroll equal @second lastSecond
+op rand quasarWaypoint 0 1
+write quasarWaypoint cell1 41
+op rand atraxWaypoint 0 1
+write atraxWaypoint cell1 42
+set lastSecond second
+noRNGroll:
+
+
+
+getblock building isMegaRepairOK 20 20
+jump noRespawn equal isMegaRepairOK @repair-point
+setblock block @repair-point 37 27 @crux 0 #Always have a repair point up, if destroyed it just instantly respawns.
+noRespawn:
+
+sensor doEvent switch1 @enabled
+jump rockEvent equal doEvent false
+set isRockDestroyed false
+jump rockEvent equal @waveNumber 20
+end
+rockEvent:
+jump doRockEvent equal isRockDestroyed false
+end
+
+doRockEvent:
+    set isRockDestroyed true
+    write isRockDestroyed cell1 32
+    cutscene pan 110 62 0.3
+    wait 0.5
+    effect explosion 110 62 7 %ff8800
+    wait 0.2
+    effect explosion 110 62 11 %ff8800
+    wait 0.2
+    setrate 50
+    explosion @crux 110 62 15 100 yes yes no
+    effect smokeCloud 110 62 40 %777777
+    effect smokeBig 110 62 30 %555555
+    effect explosion 110 62 15 %ff8800
+    setblock block @air 106 62 @sharded 0
+    setblock block @air 107 62 @sharded 0
+    setblock block @air 108 62 @sharded 0
+    setblock block @air 109 62 @sharded 0
+    setblock block @air 106 61 @sharded 0
+    setblock block @air 107 61 @sharded 0
+    setblock block @air 108 61 @sharded 0
+    setblock block @air 109 61 @sharded 0
+    setblock block @air 106 60 @sharded 0
+    setblock block @air 107 60 @sharded 0
+    setblock block @air 108 60 @sharded 0
+    setblock block @air 109 60 @sharded 0
+    setblock block @air 106 59 @sharded 0
+    setblock block @air 107 59 @sharded 0
+    setblock block @air 108 59 @sharded 0
+    setblock block @air 109 59 @sharded 0
+    setblock floor @mud 108 75 @sharded 0
+    setblock floor @mud 109 75 @sharded 0
+    setblock floor @mud 110 75 @sharded 0
+    setblock floor @mud 111 75 @sharded 0
+    setblock floor @mud 112 75 @sharded 0
+    setblock floor @mud 113 75 @sharded 0
+    setblock floor @mud 108 74 @sharded 0
+    setblock floor @mud 109 74 @sharded 0
+    setblock floor @mud 110 74 @sharded 0
+    setblock floor @mud 111 74 @sharded 0
+    setblock floor @mud 112 74 @sharded 0
+    setblock floor @mud 113 74 @sharded 0
+    setblock ore @ore-thorium 108 74 @sharded 0
+    setblock ore @ore-thorium 109 74 @sharded 0
+    setblock ore @ore-thorium 110 74 @sharded 0
+    setblock ore @ore-thorium 111 74 @sharded 0
+    setblock ore @ore-thorium 112 74 @sharded 0
+    setblock floor @mud 108 73 @sharded 0
+    setblock floor @mud 109 73 @sharded 0
+    setblock floor @mud 110 73 @sharded 0
+    setblock floor @mud 111 73 @sharded 0
+    setblock floor @mud 112 73 @sharded 0
+    setblock floor @mud 113 73 @sharded 0
+    setblock ore @ore-thorium 108 73 @sharded 0
+    setblock ore @ore-thorium 109 73 @sharded 0
+    setblock ore @ore-thorium 110 73 @sharded 0
+    setblock ore @ore-thorium 111 73 @sharded 0
+    setblock ore @ore-thorium 112 73 @sharded 0
+    setblock floor @mud 108 72 @sharded 0
+    setblock floor @mud 109 72 @sharded 0
+    setblock floor @mud 110 72 @sharded 0
+    setblock floor @mud 111 72 @sharded 0
+    setblock floor @mud 112 72 @sharded 0
+    setblock ore @ore-thorium 109 72 @sharded 0
+    setblock ore @ore-thorium 110 72 @sharded 0
+    setblock ore @ore-thorium 111 72 @sharded 0
+    setblock ore @ore-thorium 112 72 @sharded 0
+    setblock floor @mud 108 71 @sharded 0
+    setblock floor @mud 109 71 @sharded 0
+    setblock floor @mud 110 71 @sharded 0
+    setblock floor @mud 111 71 @sharded 0
+    setblock floor @mud 112 71 @sharded 0
+    setblock ore @ore-thorium 109 71 @sharded 0
+    setblock ore @ore-thorium 110 71 @sharded 0
+    setblock ore @ore-thorium 111 71 @sharded 0
+    setblock ore @ore-thorium 112 71 @sharded 0
+    setblock floor @mud 109 70 @sharded 0
+    setblock floor @mud 110 70 @sharded 0
+    setblock floor @mud 111 70 @sharded 0
+    setblock floor @mud 112 70 @sharded 0
+    setblock ore @ore-thorium 109 70 @sharded 0
+    setblock ore @ore-thorium 110 70 @sharded 0
+    setblock ore @ore-thorium 111 70 @sharded 0
+    setblock ore @ore-thorium 112 70 @sharded 0
+    setblock floor @mud 109 69 @sharded 0
+    setblock floor @mud 110 69 @sharded 0
+    setblock floor @mud 111 69 @sharded 0
+    setblock floor @mud 112 69 @sharded 0
+    setblock ore @ore-thorium 109 69 @sharded 0
+    setblock ore @ore-thorium 110 69 @sharded 0
+    setblock ore @ore-thorium 111 69 @sharded 0
+    setblock floor @mud 109 68 @sharded 0
+    setblock floor @mud 110 68 @sharded 0
+    setblock floor @mud 111 68 @sharded 0
+    setblock ore @ore-thorium 110 68 @sharded 0
+    setblock ore @ore-thorium 111 68 @sharded 0
+    setblock floor @mud 110 67 @sharded 0
+    setblock floor @mud 111 67 @sharded 0
+    setrate 8
+    wait 2
+    cutscene zoom 2.5 110 72 1
+    cutscene pan 110 72 0.3
+    wait 1
+    cutscene stop
+
+
+
+
