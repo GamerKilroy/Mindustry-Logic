@@ -19,7 +19,8 @@
 #       PDSRange is the range of secondary PDS on the unit. Set at 0 to disable PDS.
 #       PDSThreshold is the MaxHealth at which you want to start using Main Weapons on Units. Default of 500 means all T2 and above ground and all T3 and above air.
 
-tickrate 100 
+ubind @dp-klr-mace-lr
+setrate 200 
 
 set weaponRange 10      # Main weapon range, this you want to use against buildings. Will be used for big units too.
 set PDSRange 10         # PDS weapons range, where available. This is the range at which you want to shoot at most units.
@@ -27,11 +28,11 @@ set PDSThreshold 500    # If the Target Enemy Unit has more Max HP than this thr
 # At the default of 500, you start hitting T2 ground units with main, and T3 air units with main.
 
 set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
-set turretWeight 1  # For instance, genWeight at 5 turretWeight at 1 means it will be 5 times more willing to walk through turret fire to reach the generators.
+set turretWeight 3  # For instance, genWeight at 5 turretWeight at 1 means it will be 5 times more willing to walk through turret fire to reach the generators.
 set genWeight 1     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
 set factWeight 1
 set reactWeight 1
-set unitWeight 1
+set unitWeight 3
 
 ulocate building core true @copper coreX coreY isCore b_core #Locate the enemy core
 ulocate building turret true @copper turretX turretY isTurret b_turret #find the closest enemy turret
@@ -41,19 +42,16 @@ ulocate building reactor true @copper reactX reactY isReactor b_reactor #find th
 uradar enemy any any distance 0 1 enemyUnit #See if there are enemy units
 
 set maxWeight 0     # Reset the values for this cycle
-set currTarget 0
-set targetX 0
-set targetY 0
-set isPdsMode false
-set doShoot false    # By default don't shoot the nothingness.
+set isPDSMode false
 
 sensor hereX @unit @x    # Find the current unit position
 sensor hereY @unit @y
 
+jump noCore equal isCore false
 op sub aX coreX hereX     # Calculate weighted distance to Core
-op pow aXsq dX 2
+op pow aXsq aX 2
 op sub bY hereY coreY
-op pow bYsq dY 2
+op pow bYsq bY 2
 op add c2 aXsq bYsq
 op sqrt coreDist c2 c2
 op div coreDist 1 coreDist 
@@ -63,12 +61,15 @@ set currTarget b_core
 set targetX coreX
 set targetY coreY
 set maxWeight coreScaled
+noCore:
+set coreScaled 0
 coreNotHighest:
 
+jump noTurret equal isTurret false
 op sub aX turretX hereX     # Calculate weighted distance to Turret
-op pow aXsq dX 2
+op pow aXsq aX 2
 op sub bY hereY turretY
-op pow bYsq dY 2
+op pow bYsq bY 2
 op add c2 aXsq bYsq
 op sqrt turretDist c2 c2
 op div turretDist 1 turretDist 
@@ -78,57 +79,69 @@ set currTarget b_turret
 set targetX turretX
 set targetY turretY
 set maxWeight turretScaled
+noTurret:
+set turretScaled 0
 turretNotHighest:
 
+jump noGen equal isGenerator false
 op sub aX genX hereX      # Calculate weighted distance to Generator
-op pow aXsq dX 2
+op pow aXsq aX 2
 op sub bY hereY genY
-op pow bYsq dY 2
+op pow bYsq bY 2
 op add c2 aXsq bYsq
 op sqrt genDist c2 c2
 op div genDist 1 genDist 
 op mul genScaled genDist genWeight
 jump genNotHighest lessThan genScaled maxWeight
-set currTarget b_gen
+set currTarget b_generator
 set targetX genX
 set targetY genY
 set maxWeight genScaled
+noGen:
+set genScaled 0
 genNotHighest:
  
+jump noFact equal isFactory false
 op sub aX factX hereX       # Calculate weighted distance to Factory
-op pow aXsq dX 2
+op pow aXsq aX 2
 op sub bY hereY factY
-op pow bYsq dY 2
+op pow bYsq bY 2
 op add c2 aXsq bYsq
 op sqrt factDist c2 c2
 op div factDist 1 factDist 
 op mul factScaled factDist factWeight
 jump factNotHighest lessThan factScaled maxWeight
-set currTarget b_fact
+set currTarget b_factory
 set targetX factX
 set targetY factY
 set maxWeight factScaled
+noFact:
+set factScaled 0
 factNotHighest:
 
+jump noReact equal isReactor false
 op sub aX reactX hereX       # Calculate weighted distance to Reactor
-op pow aXsq dX 2
+op pow aXsq aX 2
 op sub bY hereY reactY
-op pow bYsq dY 2
+op pow bYsq bY 2
 op add c2 aXsq bYsq
 op sqrt reactDist c2 c2
 op div reactDist 1 reactDist 
 op mul reactScaled reactDist reactWeight
 jump reactNotHighest lessThan reactScaled maxWeight
-set currTarget b_react
+set currTarget b_reactor
 set targetX reactX
 set targetY reactY
 set maxWeight reactScaled
+noReact:
+set reactScaled 0
 reactNotHighest:
 
+jump noUnit equal enemyUnit null
 op sub aX unitX hereX        # Calculate weighted distance to enemy units
-op pow aXsq dX 2
+op pow aXsq aX 2
 op sub bY hereY unitY
-op pow bYsq dY 2
+op pow bYsq bY 2
 op add c2 aXsq bYsq
 op sqrt unitDist c2 c2
 op div unitDist 1 unitDist 
@@ -140,7 +153,10 @@ set targetY unitY
 set maxWeight unitScaled
 sensor unitMaxHP @enemyUnit @maxHealth
 jump bigEnough greaterThan unitMaxHP PDSThreshold
-set isPdsMode true 
+set isPDSMode true 
+noUnit:
+set unitScaled 0
+bigEnough:
 unitNotHighest:
 
 jump hasCommand greaterThan maxWeight 0    # If somehow there is no target (core is not on the map?) just unbind
@@ -161,5 +177,5 @@ jump outOfRangePDS equal hasLOF false
 set doShoot true
 outOfRangePDS:
 
-ucontrol targetp currtarget doShoot    # Insert specific unit movement logic here!
-ucontrol approach targetX targetY 1
+ucontrol targetp currTarget doShoot    # Insert specific unit movement logic here!
+ucontrol pathfind targetX targetY 
