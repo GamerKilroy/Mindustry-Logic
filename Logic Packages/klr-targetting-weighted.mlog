@@ -1,6 +1,6 @@
-# KilroyPathfind logic function
+# KilroyTargetSelection logic function
 # Author: Kilroy
-# Main Target Selection and Movement Control for klr Units.
+# Main Target Selection and Basic Fire Control for klr Units.
 # All combat units should have movement and firing defined by this function.
 # Will scan for the closest building of each type, as well as the closest unit.
 # Based on distance, weapon range and weights, you'll get a preferred target + it's coordinates.
@@ -19,20 +19,21 @@
 #       PDSRange is the range of secondary PDS on the unit. Set at 0 to disable PDS.
 #       PDSThreshold is the MaxHealth at which you want to start using Main Weapons on Units. Default of 500 means all T2 and above ground and all T3 and above air.
 
+##### INIT AND CONFIG
 ubind @dp-klr-mace-lr
 setrate 200 
 
+set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
+set turretWeight 1  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
+set genWeight 1     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
+set factWeight 1    # Default has all at 1, meaning it will target everything equally.
+set reactWeight 1
+set unitWeight 1
+
 set weaponRange 10      # Main weapon range, this you want to use against buildings. Will be used for big units too.
 set PDSRange 10         # PDS weapons range, where available. This is the range at which you want to shoot at most units.
-set PDSThreshold 500    # If the Target Enemy Unit has more Max HP than this threshold, then it will use main weapons, not PDS.
+set PDSThreshold 500    # If the Target Enemy Unit has more Max HP than this threshold, then it will use main weapons calculations, not PDS.
 # At the default of 500, you start hitting T2 ground units with main, and T3 air units with main.
-
-set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
-set turretWeight 3  # For instance, genWeight at 5 turretWeight at 1 means it will be 5 times more willing to walk through turret fire to reach the generators.
-set genWeight 1     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
-set factWeight 1
-set reactWeight 1
-set unitWeight 3
 
 ulocate building core true @copper coreX coreY isCore b_core #Locate the enemy core
 ulocate building turret true @copper turretX turretY isTurret b_turret #find the closest enemy turret
@@ -41,6 +42,8 @@ ulocate building factory true @copper factX factY isFactory b_factory #find the 
 ulocate building reactor true @copper reactX reactY isReactor b_reactor #find the closest enemy reactor
 uradar enemy any any distance 0 1 enemyUnit #See if there are enemy units
 
+
+##### CALCULATIONS
 set maxWeight 0     # Reset the values for this cycle
 set isPDSMode false
 
@@ -151,7 +154,7 @@ set currTarget enemyUnit
 set targetX unitX
 set targetY unitY
 set maxWeight unitScaled
-sensor unitMaxHP @enemyUnit @maxHealth
+sensor unitMaxHP @enemyUnit @maxHealth  # If the enemy unit has less HP than the PDS threshold, it will use PDS ranges - This way it won't fire slow main weapons at a faraway flare.
 jump bigEnough greaterThan unitMaxHP PDSThreshold
 set isPDSMode true 
 noUnit:
@@ -159,12 +162,13 @@ set unitScaled 0
 bigEnough:
 unitNotHighest:
 
-jump hasCommand greaterThan maxWeight 0    # If somehow there is no target (core is not on the map?) just unbind
-ucontrol unbind
+##### uControl and shooting manager
+jump hasCommand greaterThan maxWeight 0    # If somehow there is no target (core is not on the map?) just stop...? Usually a configuration mistake (coreWeight = 0?)
+ucontrol stop
 end
 hasCommand:  
 
-jump usePDSRange equal isPDSMode true          # Use PDS weapon range for small unit attacks, do not try to hit flares with artillery
+jump usePDSRange equal isPDSMode true          # Use PDS weapon range for small unit attacks
 
 ucontrol within targetX targetY weaponRange hasLOF  #If in range of main weapon, shoot
 jump outOfRange equal hasLOF false
@@ -177,5 +181,7 @@ jump outOfRangePDS equal hasLOF false
 set doShoot true
 outOfRangePDS:
 
-ucontrol targetp currTarget doShoot    # Insert specific unit movement logic here!
-ucontrol pathfind targetX targetY 
+ucontrol targetp currTarget doShoot    
+
+# Insert specific unit movement logic here!
+ucontrol pathfind targetX targetY 1
