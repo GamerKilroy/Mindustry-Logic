@@ -1,0 +1,24 @@
+# Squad Manager for Kilroy Units
+#
+# This processor is a memory cell + lookup function to allow "Leader" units \
+# to create Squads, request the addition of units to their squad, and send making their @unit data available to all squad members.
+#
+#
+
+setRate 200
+
+jump noRequest equal dataRequest 0
+
+jump createSquad equal dataRequest 1
+
+jump addToSquad equal dataRequest 2
+
+jump appendToSquad equal dataRequest 3
+
+jump returnSquadLeader equal dataRequest 4
+
+noRequest:
+end
+
+createSquad:
+op add newSquadId currMaxSquadId 1
