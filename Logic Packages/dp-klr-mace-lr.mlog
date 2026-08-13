@@ -1,50 +1,176 @@
-# Mace-LR Logic package
-# Author: Kilroy
-# Binds to all Mace-LR, adds keep at range logic.
-# Will focus on turrets if they're within 40 tiles
-# Has PDS while moving
-
+##### INIT AND CONFIG
 ubind @dp-klr-mace-lr
+setrate 200 
 
-ulocate building core true @copper coreX coreY isCore core #Locate the enemy core
-ulocate building turret true @copper turretX turretY isTurret turret #find the closest enemy turret
+set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
+set turretWeight 2  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
+set genWeight 1     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
+set factWeight 2    # Default has all at 1, meaning it will target everything equally.
+set reactWeight 1
+set unitWeight 1
+
+set weaponRange 12      # Main weapon range, this you want to use against buildings. Will be used for big units too.
+set PDSRange 12         # PDS weapons range, where available. This is the range at which you want to shoot at most units.
+set PDSThreshold 500    # If the Target Enemy Unit has more Max HP than this threshold, then it will use main weapons calculations, not PDS.
+# At the default of 500, you start hitting T2 ground units with main, and T3 air units with main.
+
+ulocate building core true @copper coreX coreY isCore b_core #Locate the enemy core
+ulocate building turret true @copper turretX turretY isTurret b_turret #find the closest enemy turret
+ulocate building generator true @copper genX genY isGenerator b_generator #find the closest enemy generator
+ulocate building factory true @copper factX factY isFactory b_factory #find the closest enemy factory
+ulocate building reactor true @copper reactX reactY isReactor b_reactor #find the closest enemy reactor
 uradar enemy any any distance 0 1 enemyUnit #See if there are enemy units
 
-jump noTurret equal isTurret false #If no turrets found, go for core.
 
-ucontrol within turretX turretY 30 isCloseToTurret #If we're close to a turret, then aim for that.
-jump noTurret equal isCloseToTurret false
-    set currTarget turret
-    set targetX turretX
-    set targetY turretY
-    jump shootCycle always 0 0
+##### CALCULATIONS
+set maxWeight 0     # Reset the values for this cycle
+set isPDSMode false
 
-noTurret: #If no turret or too far
-ucontrol within coreX coreY 40 isCloseToCore #If we're close to a core, then aim for that.
-jump noCore equal isCloseToCore false
-    set currTarget core
-    set targetX coreX
-    set targetY coreY
-    jump shootCycle always 0 0
+sensor hereX @unit @x    # Find the current unit position
+sensor hereY @unit @y
 
+jump noCore equal coreWeight 0
+jump noCore equal isCore false
+op sub aX coreX hereX     # Calculate weighted distance to Core
+op pow aXsq aX 2
+op sub bY hereY coreY
+op pow bYsq bY 2
+op add c2 aXsq bYsq
+op sqrt coreDist c2 c2
+op div coreDist 1 coreDist 
+op mul coreScaled coreDist coreWeight
+jump coreNotHighest lessThan coreScaled maxWeight
+set currTarget b_core
+set targetX coreX
+set targetY coreY
+set maxWeight coreScaled
 noCore:
-set targetX 9999
-set targetY 9999
-shootCycle:
-    
-    sensor unitX enemyUnit @x 
-    sensor unitY enemyUnit @y 
-    ucontrol within unitX unitY 100 isPDSneeded
-    ucontrol targetp enemyUnit isPDSneeded
-    ucontrol within targetX targetY 13 isCloseToTarget # If we're in range of a turret, stop and shoot that. No other worries.
-    jump approachTarget equal isCloseToTarget false
-        ucontrol idle
-        ucontrol target targetX targetY 1
-        end
+set coreScaled 0
+coreNotHighest:
 
-    approachTarget: # If we're not, then stop shooting the target 
-    jump acceptAuto equal isCloseToTurret false
-        ucontrol pathfind turretX turretY
-        end
-    acceptAuto:
-    ucontrol autoPathfind
+jump noTurret equal turretWeight 0
+jump noTurret equal isTurret false
+op sub aX turretX hereX     # Calculate weighted distance to Turret
+op pow aXsq aX 2
+op sub bY hereY turretY
+op pow bYsq bY 2
+op add c2 aXsq bYsq
+op sqrt turretDist c2 c2
+op div turretDist 1 turretDist 
+op mul turretScaled turretDist turretWeight
+jump turretNotHighest lessThan turretScaled maxWeight
+set currTarget b_turret
+set targetX turretX
+set targetY turretY
+set maxWeight turretScaled
+noTurret:
+set turretScaled 0
+turretNotHighest:
+
+jump noGen equal genWeight 0
+jump noGen equal isGenerator false
+op sub aX genX hereX      # Calculate weighted distance to Generator
+op pow aXsq aX 2
+op sub bY hereY genY
+op pow bYsq bY 2
+op add c2 aXsq bYsq
+op sqrt genDist c2 c2
+op div genDist 1 genDist 
+op mul genScaled genDist genWeight
+jump genNotHighest lessThan genScaled maxWeight
+set currTarget b_generator
+set targetX genX
+set targetY genY
+set maxWeight genScaled
+noGen:
+set genScaled 0
+genNotHighest:
+ 
+jump noFact equal factWeight 0
+jump noFact equal isFactory false
+op sub aX factX hereX       # Calculate weighted distance to Factory
+op pow aXsq aX 2
+op sub bY hereY factY
+op pow bYsq bY 2
+op add c2 aXsq bYsq
+op sqrt factDist c2 c2
+op div factDist 1 factDist 
+op mul factScaled factDist factWeight
+jump factNotHighest lessThan factScaled maxWeight
+set currTarget b_factory
+set targetX factX
+set targetY factY
+set maxWeight factScaled
+noFact:
+set factScaled 0
+factNotHighest:
+
+jump noReact equal reactWeight 0
+jump noReact equal isReactor false
+op sub aX reactX hereX       # Calculate weighted distance to Reactor
+op pow aXsq aX 2
+op sub bY hereY reactY
+op pow bYsq bY 2
+op add c2 aXsq bYsq
+op sqrt reactDist c2 c2
+op div reactDist 1 reactDist 
+op mul reactScaled reactDist reactWeight
+jump reactNotHighest lessThan reactScaled maxWeight
+set currTarget b_reactor
+set targetX reactX
+set targetY reactY
+set maxWeight reactScaled
+noReact:
+set reactScaled 0
+reactNotHighest:
+
+jump noUnit equal enemyUnit null
+op sub aX unitX hereX        # Calculate weighted distance to enemy units
+op pow aXsq aX 2
+op sub bY hereY unitY
+op pow bYsq bY 2
+op add c2 aXsq bYsq
+op sqrt unitDist c2 c2
+op div unitDist 1 unitDist 
+op mul unitScaled unitDist unitWeight
+jump unitNotHighest lessThan unitScaled maxWeight
+set currTarget enemyUnit
+set targetX unitX
+set targetY unitY
+set maxWeight unitScaled
+sensor unitMaxHP @enemyUnit @maxHealth  # If the enemy unit has less HP than the PDS threshold, it will use PDS ranges - This way it won't fire slow main weapons at a faraway flare.
+jump bigEnough greaterThan unitMaxHP PDSThreshold
+set isPDSMode true 
+noUnit:
+set unitScaled 0
+bigEnough:
+unitNotHighest:
+
+##### uControl and shooting manager
+jump hasCommand greaterThan maxWeight 0    # If somehow there is no target (core is not on the map?) just stop...? Usually a configuration mistake (coreWeight = 0?)
+ucontrol stop
+end
+hasCommand:  
+
+jump usePDSRange equal isPDSMode true          # Use PDS weapon range for small unit attacks
+
+ucontrol within targetX targetY weaponRange hasLOF  #If in range of main weapon, shoot
+jump outOfRange equal hasLOF false
+set doShoot true
+outOfRange:
+
+usePDSRange:
+ucontrol within targetX targetY PDSRange hasLOF   #if in range of PDS, shoot
+jump outOfRangePDS equal hasLOF false
+set doShoot true
+outOfRangePDS:
+
+ucontrol targetp currTarget doShoot    
+
+# Insert specific unit movement logic here!
+ucontrol within targetX targetY weaponRange hasLOF
+jump takePathfind equal hasLOF false
+ucontrol idle
+end
+takePathfind:
+ucontrol pathfind targetX targetY 1

@@ -1,36 +1,16 @@
-# KilroyTargetSelection logic function
-# Author: Kilroy
-# Main Target Selection and Basic Fire Control for klr Units.
-# All combat units should have movement and firing defined by this function.
-# Will scan for the closest building of each type, as well as the closest unit.
-# Based on distance, weapon range and weights, you'll get a preferred target + it's coordinates.
-#
-# This code also considers weapons of being one of two types: Main Weapons, or PDS Weapons.
-#   Main Weapons are the primary source of damage from the Unit. Fortress's Artillery is a prime example. They will be always used to deal damage to structures.
-#   PDS weapons are auxiliary weapons that may or may not exist on a unit. They're faster and much more agile than Main Weapons, and are designed to combat units.
-#       Note: Against larger units, the calculations still use Main Weapon and not PDS weapons. The Threshold is a parameter.
-#
-# Has 9 parameters:
-#    The first 6 are the Weights.
-#       The higher the weight of a specific type, the more likely it is for said structure to be targetted.
-#       If all are Equal, it will target the closest structure/unit.
-#    The remaining 3 are Weapon Parameters
-#       weaponRange defines the max range of your main weapon. For instance, Fortress' Artillery is 24.
-#       PDSRange is the range of secondary PDS on the unit. Set at 0 to disable PDS.
-#       PDSThreshold is the MaxHealth at which you want to start using Main Weapons on Units. Default of 500 means all T2 and above ground and all T3 and above air.
-
 ##### INIT AND CONFIG
+ubind @dp-klr-fortress-lr
 setrate 200 
 
-set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
-set turretWeight 1  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
+set coreWeight 3    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
+set turretWeight 2  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
 set genWeight 1     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
 set factWeight 1    # Default has all at 1, meaning it will target everything equally.
-set reactWeight 1
-set unitWeight 1
+set reactWeight 3
+set unitWeight 0
 
-set weaponRange 10      # Main weapon range, this you want to use against buildings. Will be used for big units too.
-set PDSRange 10         # PDS weapons range, where available. This is the range at which you want to shoot at most units.
+set weaponRange 23      # Main weapon range, this you want to use against buildings. Will be used for big units too.
+set PDSRange 0         # PDS weapons range, where available. This is the range at which you want to shoot at most units.
 set PDSThreshold 500    # If the Target Enemy Unit has more Max HP than this threshold, then it will use main weapons calculations, not PDS.
 # At the default of 500, you start hitting T2 ground units with main, and T3 air units with main.
 
@@ -188,4 +168,9 @@ outOfRangePDS:
 ucontrol targetp currTarget doShoot    
 
 # Insert specific unit movement logic here!
+ucontrol within targetX targetY weaponRange hasLOF
+jump takePathfind equal hasLOF false
+ucontrol idle
+end
+takePathfind:
 ucontrol pathfind targetX targetY 1

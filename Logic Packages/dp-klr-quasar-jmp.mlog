@@ -26,6 +26,8 @@ init:
     op add MBY MBY 1
     read waypointX cell1 MBX
     read waypointY cell1 MBY
+    set waypointX 137
+    set waypointY 207
     ucontrol flag 1
     end
 
