@@ -5,7 +5,7 @@ blocks=["graphite-press", "multi-press", "silicon-smelter", "silicon-crucible", 
 ci=0
 cp=0
 cf=open("lutproc0.mlog","w")
-cf.write(f"setRate 200\n")
+cf.write(f"setrate 200\n")
 print("lutproc0.mlog:")
 for i in range(6000):
  v='"'+chars[i%clen]+charsf[i//clen]+'"'
@@ -19,5 +19,5 @@ for i in range(6000):
   cf.write(f"stop\n")
   cf.close()
   cf=open(f"lutproc{cp}.mlog","w")
-  cf.write(f"setRate 200\n")
+  cf.write(f"setrate 200\n")
   print(f"lutproc{cp}.mlog:")

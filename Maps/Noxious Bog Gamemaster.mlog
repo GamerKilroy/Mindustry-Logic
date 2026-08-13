@@ -1,0 +1,14 @@
+# Noxious Bog Gamemaster
+# Manages the gamestate, initializes waypoints, requests cutscenes and more.
+
+setrate 200
+set WMEM processor1 # Link to ram
+
+jump initialize equal gamestate 0
+
+end
+
+
+
+initialize:
+write 

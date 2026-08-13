@@ -1,11 +1,22 @@
-setRate 200
+setrate 200
+
+set graphite-press "/A"
+set multi-press ":A"
+set silicon-smelter "<A"
+set silicon-crucible "=A"
+set kiln ">A"
+set plastanium-compressor "?A"
+set phase-weaver "AA"
+set cryofluid-mixer "BA"
 
 set i 0
-jump endInit greaterThan i @links
+set numlink @links
+repeat:
 lookup block vname i 
 sensor vname vname @name
 getlink vlink i
-write vname @this vlink
-endInit:
-op maxRAM @links * 6000
+write vlink @this vname
+op add i i 1
+jump repeat lessThan i @links
+op mul maxRAM @links 6000
 stop
