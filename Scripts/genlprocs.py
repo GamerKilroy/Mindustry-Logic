@@ -19,4 +19,5 @@ for i in range(6000):
   cf.write(f"stop\n")
   cf.close()
   cf=open(f"lutproc{cp}.mlog","w")
+  cf.write(f"setRate 200\n")
   print(f"lutproc{cp}.mlog:")

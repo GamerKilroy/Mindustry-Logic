@@ -1,0 +1,11 @@
+setRate 200
+
+set i 0
+jump endInit greaterThan i @links
+lookup block vname i 
+sensor vname vname @name
+getlink vlink i
+write vname @this vlink
+endInit:
+op maxRAM @links * 6000
+stop
