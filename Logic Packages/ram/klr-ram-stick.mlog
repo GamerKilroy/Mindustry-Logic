@@ -27,8 +27,9 @@ jump memread equal req 1
 jump memwrite equal req 2
 jump memlookup equal req 3
 jump memlookuptarget equal 4
-jump malloc equal 10
-jump free equal 11
+jump malloc equal req 10
+jump free equal req 11
+jump fullReset equal req 99
 jump maintenanceloop greaterThan @second lastSecond
 
 doInit:
@@ -210,7 +211,32 @@ free:
     jump doReset always 0 0
 end
 
+fullReset:
+    set isBusy true
+    set i 0
+    setrate 500
+    continueFree:
+        op mod ramvnameidx i 6000 #Get the memory address IN the ram
+        op idiv ramprocidx i 6000 #Get the number of the memory bank
+        lookup block vname ramprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
+        op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
+        lookup block vname romprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
+        op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
+        lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
+        sensor vnameforrom vnameforromblock @name 
+        read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
+        write null RAMref actualvarname
+        op add i 1
+        jump continueFree lessThan i maxRAM
+   
+    write 1 ACKtarget "ramACK"
 
+    jump doReset always 0 0
+end
 
 
 maintenanceloop:
