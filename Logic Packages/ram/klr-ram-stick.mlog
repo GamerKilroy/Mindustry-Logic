@@ -4,6 +4,7 @@
 #       1 - Read Request
 #       2 - Write Request
 #       3 - Lookup Request
+#       4 - Targetted Lookup Request
 #
 # The memory address to read/write from can be found in the following variable
 # addr = The position in RAM to read or write
@@ -15,6 +16,8 @@
 # ACKtarget = The @unit or @building that will receive the ACK.
 # Note - The remotes will receive ACK via the ramACK variable, written by this.
 #
+# reqLen is used for targetted lookup, specifying the number of position to search after the defined ADDR.
+#
 # Before populating any requests, units should check if the core is busy.
 # isBusy is set to true whenever the RAM is in the middle of writing or reading.
 # Will be automatically set to false when the current operation is done.
@@ -23,21 +26,28 @@ jump doInit equal doneInit 0
 jump memread equal req 1
 jump memwrite equal req 2
 jump memlookup equal req 3
-
-end
+jump memlookuptarget equal 4
+jump malloc equal 10
+jump free equal 11
+jump maintenanceloop greaterThan @second lastSecond
 
 doInit:
-set RAMLOOKUP processor1
-read maxRAM RAMLOOKUP maxRAM
-set ROMLOOKUP processor2
-set req 0
-set addr 0
-set inbuffer 0
-set ACKtarget 0
-set isBusy 0
-set doneInit true
-setrate 8
-end
+    set RAMLOOKUP processor1
+    read maxRAM RAMLOOKUP maxRAM
+    set ROMLOOKUP processor2
+    set unitMemoryPointer = 1000
+    set squadMemoryPointer = 3000
+
+doReset:
+    set req 0
+    set addr 0
+    set inbuffer 0
+    set ACKtarget 0
+    set isBusy 0
+    set doneInit true
+    set reqLen 0
+    setrate 8
+    end
 
 memread:
     set isBusy true #Set processor as busy
@@ -56,8 +66,11 @@ memread:
     sensor vnameforrom vnameforromblock @name 
     read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
     read value RAMref actualvarname #Read from RAM the Variable Value
-    write value ACKtarget ramACK #Send the Variable Value to the ACKtarget
-    jump doInit always 0 0
+
+    write value ACKtarget "WMEMBUFFER_OUT"
+    write 1 ACKtarget "ramACK" #Send the Variable Value to the ACKtarget
+
+    jump doReset always 0 0
 end
 
 memwrite:
@@ -79,19 +92,18 @@ memwrite:
     sensor vnameforrom vnameforromblock @name 
     read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
     write inbuffer RAMref actualvarname #Write the variable to memory.
-    write 1 ACKtarget ramACK #Confirm write to ACKtarget
+    write 1 ACKtarget "ramACK" #Confirm write to ACKtarget
     set isBusy false #Write completed, remove busy return to normal IPT.
-    jump doInit always 0 0
+    jump doReset always 0 0
 end
 
 memlookup:
     set isBusy true
     set i 0
-    set bank 0
     setrate 500
     continueLookup:
-        op mod ramvnameidx addr i #Get the memory address IN the ram
-        op idiv ramprocidx addr i #Get the number of the memory bank
+        op mod ramvnameidx i 6000 #Get the memory address IN the ram
+        op idiv ramprocidx i 6000 #Get the number of the memory bank
         lookup block vname ramprocidx #Lookup to convert to String + Name
         sensor vname vname @name
         read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
@@ -107,11 +119,104 @@ memlookup:
         jump lookupDone equal currLookup inbuffer
         op add i 1
         jump continueLookup lessThan i maxRAM
-        jump doInit always 0 0
+        set currLookup -1
+        jump lookupDone equal currLookup inbuffer
     end
 
     lookupDone:
-    write i ACKtarget ramACK
-    jump doInit always 0 0
+    
+    write i ACKtarget "WMEMBUFFER_OUT"
+    write 1 ACKtarget "ramACK"
+    jump doReset always 0 0
+
+memlookuptarget:
+    set isBusy true
+    set i addr
+    op add maxLookup addr reqLen
+    setrate 500
+    continueLookup:
+        op mod ramvnameidx i 6000 #Get the memory address IN the ram
+        op idiv ramprocidx i 6000 #Get the number of the memory bank
+        lookup block vname ramprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
+        op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
+        lookup block vname romprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
+        op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
+        lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
+        sensor vnameforrom vnameforromblock @name 
+        read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
+        read currLookup RAMref actualvarname
+        jump lookupDone equal currLookup inbuffer
+        op add i 1
+        jump continueLookup lessThan i maxLookup
+        set i -1
+        jump lookupDone equal currLookup inbuffer
+    end
+
+    lookupDone:
+   
+    write i ACKtarget "WMEMBUFFER_OUT"
+    write 1 ACKtarget "ramACK"
+
+    jump doReset always 0 0
 end
 
+malloc:
+    jump unitMalloc equal reqLen 1
+    jump squadMalloc equal reqLen 2
+    jump doReset always 0 0 
+
+    unitMalloc:
+        write unitMemoryPointer ACKtarget "WMEMBUFFER_OUT"
+        op add unitMemoryPointer unitMemoryPointer 32
+        write 1 ACKtarget "ramACK"
+        jump doReset always 0 0
+
+    squadMalloc:
+        write squadMemoryPointer ACKtarget "WMEMBUFFER_OUT"
+        op add squadMemoryPointer squadMemoryPointer 256
+        write 1 ACKtarget "ramACK"
+        jump doReset always 0 0
+end
+
+free:
+    set isBusy true
+    set i addr
+    op add freeSize addr reqLen
+    setrate 500
+    continueFree:
+        op mod ramvnameidx i 6000 #Get the memory address IN the ram
+        op idiv ramprocidx i 6000 #Get the number of the memory bank
+        lookup block vname ramprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
+        op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
+        lookup block vname romprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
+        op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
+        lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
+        sensor vnameforrom vnameforromblock @name 
+        read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
+        write null RAMref actualvarname
+        op add i 1
+        jump continueFree lessThan i freeSize
+   
+    write 1 ACKtarget "ramACK"
+
+    jump doReset always 0 0
+end
+
+
+
+
+maintenanceloop:
+query rect unit @crux 0 0 0 @mapw @unitMaxHP
+read atLeastOneEnemy @queries 0
+jump enemiesAlive notEqual atLeastOneEnemy false
+    set unitMemoryPointer = 1000
+enemiesAlive:
+jump doReset always 0 0

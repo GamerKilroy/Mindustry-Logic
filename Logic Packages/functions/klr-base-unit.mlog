@@ -1,0 +1,86 @@
+# Base Unit Module and Example
+
+set WMEM processor1   #RAM Initialization
+set ADDR 0
+set REQTYPE 0
+set WMEMBUFF_IN 0
+set WMEMBUFF_OUT 0
+set WMEMUFF_LEN 0
+set ramACK 0
+set stacKPointer 0
+
+ubind TARGET_UNIT ## Binds to the unit handle.
+sensor ADDR @unit @flag
+
+jump init equal ADDR 0    # If the unit does not have a memory space yet, initialize
+
+
+jump spawn equal currState 1
+jump boost_waypoint equal currState 2
+jump roaming equal currState 3
+jump do_jump equal currState 10
+end
+
+init:
+    ulocate building core false @copper 0 0 0 allyCore
+    sensor isRam allyCore @flag
+    jump noRam equal isRam false
+        sensor unitType @this @type
+        set ADDR 50
+        set REQTYPE 4
+        set WMEMBUFF_IN unitType
+        set WMEMBUFF_LEN 50
+        op add reti @counter 2
+        jump doWMEMlookup always 0 0
+        set 0 0
+
+        jump noRam equal WMEMBUFF_OUT -1
+
+        op add memorySpaceBaseAddr WMEMBUFF_IN 50
+        set ADDR memorySpaceBaseAddr
+        set REQTYPE 1
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set 0 0
+
+        set memorySpaceBaseAddr WMEMBUFF_IN 50
+
+
+noRam:
+    ucontrol flag -99
+
+
+
+doWMEMread:
+    waitForReady:
+    read isBusy WMEM "isBusy"
+    jump waitForReady equal isBusy true
+    write ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write REQTYPE 1
+    waitACK: ; jump waitACK equal ramACK 0
+    set ramACK 0
+    set @counter reti
+
+doWMEMwrite:
+    waitForReady:
+    read isBusy WMEM "isBusy"
+    jump waitForReady equal isBusy true
+    write ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write REQTYPE 2
+    waitACK: ; jump waitACK equal ramACK 0
+    set ramACK 0
+    set @counter reti
+
+doWMEMlookup:
+    waitForReady:
+    read isBusy WMEM "isBusy"
+    jump waitForReady equal isBusy true
+    write ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write WMEMBUFF_LEN "reqLen"
+    write REQTYPE 4
+    waitACK: ; jump waitACK equal ramACK 0
+    set ramACK 0
+    set @counter reti
