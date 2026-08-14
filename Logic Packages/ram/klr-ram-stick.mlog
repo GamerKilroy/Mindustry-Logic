@@ -37,7 +37,9 @@ doInit:
     read maxRAM RAMLOOKUP maxRAM
     set ROMLOOKUP processor2
     set unitMemoryPointer = 1000
+    op add maxUnitMemory unitMemoryPointer 1900
     set squadMemoryPointer = 3000
+    op add maxSquadMemory squadMemoryPointer 3700
 
 doReset:
     set req 0
@@ -171,14 +173,21 @@ malloc:
     jump doReset always 0 0 
 
     unitMalloc:
+        jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
         write unitMemoryPointer ACKtarget "WMEMBUFFER_OUT"
         op add unitMemoryPointer unitMemoryPointer 32
         write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 
     squadMalloc:
+        jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
         write squadMemoryPointer ACKtarget "WMEMBUFFER_OUT"
         op add squadMemoryPointer squadMemoryPointer 256
+        write 1 ACKtarget "ramACK"
+        jump doReset always 0 0
+
+    outOfMemory:
+        write -1 ACKtarget "WMEMBUFFER_OUT"
         write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 end
