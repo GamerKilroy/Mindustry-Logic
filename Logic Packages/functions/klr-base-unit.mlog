@@ -1,56 +1,247 @@
 # Base Unit Module and Example
 
-set WMEM processor1   #RAM Initialization
+setrate 500
+set TARGET_UNIT @dagger
+
+set WMEM processor1   #RAM Initialization - Do not touch
 set ADDR 0
 set REQTYPE 0
 set WMEMBUFF_IN 0
 set WMEMBUFF_OUT 0
-set WMEMUFF_LEN 0
+set WMEBUFF_LEN 0
 set ramACK 0
 set stacKPointer 0
 
+set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
+set turretWeight 1  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
+set genWeight 1     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
+set factWeight 1    # Default has all at 1, meaning it will target everything equally.
+set reactWeight 1
+set unitWeight 1
+
+set weaponRange 10      # Main weapon range, this you want to use against buildings. Will be used for big units too.
+set PDSRange 10         # PDS weapons range, where available. This is the range at which you want to shoot at most units.
+set PDSThreshold 500    # If the Target Enemy Unit has more Max HP than this threshold, then it will use main weapons calculations, not PDS.
+# At the default of 500, you start hitting T2 ground units with main, and T3 air units with main.
+
+
 ubind TARGET_UNIT ## Binds to the unit handle.
-sensor ADDR @unit @flag
 
-jump init equal ADDR 0    # If the unit does not have a memory space yet, initialize
+sensor bitpack @unit @flag
+op mod ADDR bitpack 100000
+op div FLAG bitpack 100000
+
+jump ramInactive equal ADDR 0  ##Check if we already have RAM active.
+set isRAM 1
+jump endRamCheck always 0 0
+ramInactive:
+set isRAM 0
+endRamCheck:
 
 
-jump spawn equal currState 1
-jump boost_waypoint equal currState 2
-jump roaming equal currState 3
-jump do_jump equal currState 10
+jump init equal flag 0    # If the unit does not have a memory space yet, initialize
+
+jump roaming equal flag 1
+
 end
 
 init:
-    ulocate building core false @copper 0 0 0 allyCore
-    sensor isRam allyCore @flag
-    jump noRam equal isRam false
-        sensor unitType @this @type
+    ulocate building core false @copper 0 0 0 allyCore #Find the ally core and read flag.
+    sensor isRAM allyCore @flag                        #If flag is not set, then RAM is not active.
+    jump noRam equal isRAM false
+        sensor unitType @this @type                    #Lookup in Logic Units if this unit type is enabled.
         set ADDR 50
         set REQTYPE 4
         set WMEMBUFF_IN unitType
         set WMEMBUFF_LEN 50
         op add reti @counter 2
         jump doWMEMlookup always 0 0
-        set 0 0
+        noop
 
-        jump noRam equal WMEMBUFF_OUT -1
-
-        op add memorySpaceBaseAddr WMEMBUFF_IN 50
-        set ADDR memorySpaceBaseAddr
+        jump noRam equal WMEMBUFF_OUT -1      #If disabled, act as if no RAM is available.
+        set ADDR memorySpaceBaseAddr          #Otherwise, ask for variable allocation and receive back your ADDR        
         set REQTYPE 1
         op add reti @counter 2
-        jump doWMEMread always 0 0
-        set 0 0
+        jump doWMEMmalloc always 0 0
+        noop
 
-        set memorySpaceBaseAddr WMEMBUFF_IN 50
-
+        op mul bitpack 1 100000                #Calculate new bitpacked flag, set it, and set ADDR for this cycle.
+        op add bitpack newFlag WMEMBUFF_OUT
+        ucontrol flag newFlag
+        set ADDR WMEMBUFF_OUT
+        end
 
 noRam:
-    ucontrol flag -99
+    ucontrol flag newFlag #In absence of RAM, we only use FLAG. 
+
+roaming:
+    jump roamingDefault equal isRAM false
+    jump roamingRAM equal isRAM true
+    end
+
+    roamingDefault:
+        ulocate building core true @copper coreX coreY isCore b_core #Locate the enemy core
+        ulocate building turret true @copper turretX turretY isTurret b_turret #find the closest enemy turret
+        ulocate building generator true @copper genX genY isGenerator b_generator #find the closest enemy generator
+        ulocate building factory true @copper factX factY isFactory b_factory #find the closest enemy factory
+        ulocate building reactor true @copper reactX reactY isReactor b_reactor #find the closest enemy reactor
+        uradar enemy any any distance 0 1 enemyUnit #See if there are enemy units
+
+
+        ##### CALCULATIONS
+        set maxWeight 0     # Reset the values for this cycle
+        set isPDSMode false
+
+        sensor hereX @unit @x    # Find the current unit position
+        sensor hereY @unit @y
+
+        jump noCore equal coreWeight 0
+        jump noCore equal isCore false
+        op sub aX coreX hereX     # Calculate weighted distance to Core
+        op pow aXsq aX 2
+        op sub bY hereY coreY
+        op pow bYsq bY 2
+        op add c2 aXsq bYsq
+        op sqrt coreDist c2 c2
+        op div coreDist 1 coreDist 
+        op mul coreScaled coreDist coreWeight
+        jump coreNotHighest lessThan coreScaled maxWeight
+        set currTarget b_core
+        set targetX coreX
+        set targetY coreY
+        set maxWeight coreScaled
+        noCore:
+        set coreScaled 0
+        coreNotHighest:
+
+        jump noTurret equal turretWeight 0
+        jump noTurret equal isTurret false
+        op sub aX turretX hereX     # Calculate weighted distance to Turret
+        op pow aXsq aX 2
+        op sub bY hereY turretY
+        op pow bYsq bY 2
+        op add c2 aXsq bYsq
+        op sqrt turretDist c2 c2
+        op div turretDist 1 turretDist 
+        op mul turretScaled turretDist turretWeight
+        jump turretNotHighest lessThan turretScaled maxWeight
+        set currTarget b_turret
+        set targetX turretX
+        set targetY turretY
+        set maxWeight turretScaled
+        noTurret:
+        set turretScaled 0
+        turretNotHighest:
+
+        jump noGen equal genWeight 0
+        jump noGen equal isGenerator false
+        op sub aX genX hereX      # Calculate weighted distance to Generator
+        op pow aXsq aX 2
+        op sub bY hereY genY
+        op pow bYsq bY 2
+        op add c2 aXsq bYsq
+        op sqrt genDist c2 c2
+        op div genDist 1 genDist 
+        op mul genScaled genDist genWeight
+        jump genNotHighest lessThan genScaled maxWeight
+        set currTarget b_generator
+        set targetX genX
+        set targetY genY
+        set maxWeight genScaled
+        noGen:
+        set genScaled 0
+        genNotHighest:
+        
+        jump noFact equal factWeight 0
+        jump noFact equal isFactory false
+        op sub aX factX hereX       # Calculate weighted distance to Factory
+        op pow aXsq aX 2
+        op sub bY hereY factY
+        op pow bYsq bY 2
+        op add c2 aXsq bYsq
+        op sqrt factDist c2 c2
+        op div factDist 1 factDist 
+        op mul factScaled factDist factWeight
+        jump factNotHighest lessThan factScaled maxWeight
+        set currTarget b_factory
+        set targetX factX
+        set targetY factY
+        set maxWeight factScaled
+        noFact:
+        set factScaled 0
+        factNotHighest:
+
+        jump noReact equal reactWeight 0
+        jump noReact equal isReactor false
+        op sub aX reactX hereX       # Calculate weighted distance to Reactor
+        op pow aXsq aX 2
+        op sub bY hereY reactY
+        op pow bYsq bY 2
+        op add c2 aXsq bYsq
+        op sqrt reactDist c2 c2
+        op div reactDist 1 reactDist 
+        op mul reactScaled reactDist reactWeight
+        jump reactNotHighest lessThan reactScaled maxWeight
+        set currTarget b_reactor
+        set targetX reactX
+        set targetY reactY
+        set maxWeight reactScaled
+        noReact:
+        set reactScaled 0
+        reactNotHighest:
+
+        jump noUnit equal enemyUnit null
+        op sub aX unitX hereX        # Calculate weighted distance to enemy units
+        op pow aXsq aX 2
+        op sub bY hereY unitY
+        op pow bYsq bY 2
+        op add c2 aXsq bYsq
+        op sqrt unitDist c2 c2
+        op div unitDist 1 unitDist 
+        op mul unitScaled unitDist unitWeight
+        jump unitNotHighest lessThan unitScaled maxWeight
+        set currTarget enemyUnit
+        set targetX unitX
+        set targetY unitY
+        set maxWeight unitScaled
+        sensor unitMaxHP @enemyUnit @maxHealth  # If the enemy unit has less HP than the PDS threshold, it will use PDS ranges - This way it won't fire slow main weapons at a faraway flare.
+        jump bigEnough greaterThan unitMaxHP PDSThreshold
+        set isPDSMode true 
+        noUnit:
+        set unitScaled 0
+        bigEnough:
+        unitNotHighest:
+
+        ##### uControl and shooting manager
+        jump hasCommand greaterThan maxWeight 0    # If somehow there is no target (core is not on the map?) just stop...? Usually a configuration mistake (coreWeight = 0?)
+        ucontrol stop
+        end
+        hasCommand:  
+
+        jump usePDSRange equal isPDSMode true          # Use PDS weapon range for small unit attacks
+
+        ucontrol within targetX targetY weaponRange hasLOF  #If in range of main weapon, shoot
+        jump outOfRange equal hasLOF false
+        set doShoot true
+        outOfRange:
+
+        usePDSRange:
+        ucontrol within targetX targetY PDSRange hasLOF   #if in range of PDS, shoot
+        jump outOfRangePDS equal hasLOF false
+        set doShoot true
+        outOfRangePDS:
+
+        ucontrol targetp currTarget doShoot    
+
+        # Insert specific basic unit movement here
+        ucontrol pathfind targetX targetY 1
+        end
+
+    roamingRAM:     #700 lines left available for custom logic!
 
 
 
+##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
 doWMEMread:
     waitForReady:
     read isBusy WMEM "isBusy"
@@ -81,6 +272,18 @@ doWMEMlookup:
     write WMEMBUFF_IN WMEM "inbuffer"
     write WMEMBUFF_LEN "reqLen"
     write REQTYPE 4
+    waitACK: ; jump waitACK equal ramACK 0
+    set ramACK 0
+    set @counter reti
+
+doWMEMmalloc:
+    waitForReady:
+    read isBusy WMEM "isBusy"
+    jump waitForReady equal isBusy true
+    write ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write WMEMBUFF_LEN 1
+    write REQTYPE 10
     waitACK: ; jump waitACK equal ramACK 0
     set ramACK 0
     set @counter reti

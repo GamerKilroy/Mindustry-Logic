@@ -59,7 +59,7 @@ doReset:
 
 memread:
     set isBusy true #Set processor as busy
-    setrate 200
+    setrate 500
     op mod ramvnameidx addr 6000 #Get the memory address IN the ram
     op idiv ramprocidx addr 6000 #Get the number of the memory bank
     lookup block vname ramprocidx #Lookup to convert to String + Name
@@ -83,7 +83,7 @@ end
 
 memwrite:
     set isBusy true #Set processor as busy
-    setrate 200
+    setrate 500
     op mod ramvnameidx addr 6000 #Get the memory address IN the ram
     op idiv ramprocidx addr 6000 #Get the number of the memory bank
     lookup block vname ramprocidx #Lookup to convert to String + Name
