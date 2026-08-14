@@ -22,6 +22,11 @@
 # isBusy is set to true whenever the RAM is in the middle of writing or reading.
 # Will be automatically set to false when the current operation is done.
 
+set baseUnitMemoryAddr 1000
+set baseUnitMemoryLen 3900
+set baseSquadMemoryAddr 7000
+set baseSquadMemoryLen 3700
+
 jump doInit equal doneInit 0
 jump memread equal req 1
 jump memwrite equal req 2
@@ -36,10 +41,10 @@ doInit:
     set RAMLOOKUP processor1
     read maxRAM RAMLOOKUP maxRAM
     set ROMLOOKUP processor2
-    set unitMemoryPointer = 1000
-    op add maxUnitMemory unitMemoryPointer 1900
-    set squadMemoryPointer = 3000
-    op add maxSquadMemory squadMemoryPointer 3700
+    set unitMemoryPointer baseUnitMemoryAddr
+    op add maxUnitMemory unitMemoryPointer baseUnitMemoryAddr
+    set squadMemoryPointer baseSquadMemoryAddr
+    op add maxSquadMemory squadMemoryPointer baseSquadMemoryLen
 
 doReset:
     set req 0
@@ -175,14 +180,14 @@ malloc:
     unitMalloc:
         jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
         write unitMemoryPointer ACKtarget "WMEMBUFFER_OUT"
-        op add unitMemoryPointer unitMemoryPointer 32
+        op add unitMemoryPointer unitMemoryPointer 16
         write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 
     squadMalloc:
         jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
         write squadMemoryPointer ACKtarget "WMEMBUFFER_OUT"
-        op add squadMemoryPointer squadMemoryPointer 256
+        op add squadMemoryPointer squadMemoryPointer 128
         write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 
@@ -255,8 +260,8 @@ jump enemiesAlive notEqual atLeastOneEnemy false
     jump noCleanup equal didCleanup true
         set didCleanup true
         set isBusy true
-        set i 1000
-        op add freeSize addr 1999
+        set i baseUnitMemoryAddr
+        op add freeSize addr baseUnitMemoryLen
         setrate 500
         maintenanceUnitFree:
             op mod ramvnameidx i 6000 #Get the memory address IN the ram
@@ -276,9 +281,9 @@ jump enemiesAlive notEqual atLeastOneEnemy false
             op add i 1
             jump maintenanceUnitFree lessThan i freeSize
 
-        set i 3000
-        op add freeSize addr 3999
-        maintenanceUnitFree:
+        set i baseSquadMemoryAddr
+        op add freeSize addr baseSquadMemoryLen
+        maintenanceSquadFree:
             op mod ramvnameidx i 6000 #Get the memory address IN the ram
             op idiv ramprocidx i 6000 #Get the number of the memory bank
             lookup block vname ramprocidx #Lookup to convert to String + Name
@@ -294,7 +299,7 @@ jump enemiesAlive notEqual atLeastOneEnemy false
             read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
             write null RAMref actualvarname
             op add i 1
-            jump maintenanceUnitFree lessThan i freeSize
+            jump maintenanceSquadFree lessThan i freeSize
 
         jump doReset always 0 0
 
