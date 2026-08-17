@@ -4,7 +4,7 @@ setrate 500
 set TARGET_UNIT @dagger
 
 set WMEM processor1   #RAM Initialization - Do not touch
-set ADDR 0
+set WMEM_ADDR 0
 set REQTYPE 0
 set WMEMBUFF_IN 0
 set WMEMBUFF_OUT 0
@@ -50,7 +50,7 @@ init:
     sensor isRAM allyCore @flag                        #If flag is not set, then RAM is not active.
     jump noRam equal isRAM false
         sensor unitType @this @type                    #Lookup in Logic Units if this unit type is enabled.
-        set ADDR 50
+        set WMEM_ADDR 50
         set REQTYPE 4
         set WMEMBUFF_IN unitType
         set WMEMBUFF_LEN 50
@@ -59,7 +59,7 @@ init:
         noop
 
         jump noRam equal WMEMBUFF_OUT -1      #If disabled, act as if no RAM is available.
-        set ADDR memorySpaceBaseAddr          #Otherwise, ask for variable allocation and receive back your ADDR        
+        set WMEM_ADDR memorySpaceBaseAddr          #Otherwise, ask for variable allocation and receive back your ADDR        
         set REQTYPE 1
         op add reti @counter 2
         jump doWMEMmalloc always 0 0
@@ -68,11 +68,17 @@ init:
         op mul bitpack 1 100000                #Calculate new bitpacked flag, set it, and set ADDR for this cycle.
         op add bitpack newFlag WMEMBUFF_OUT
         ucontrol flag newFlag
-        set ADDR WMEMBUFF_OUT
+        set WMEM_ADDR ADDR
+        set WMEMBUFF_IN @unit
+        op add reti @counter 2
+        jump doWMEMwrite always 0 0
+        noop
+
+        set ADDR
         end
 
 noRam:
-    ucontrol flag newFlag #In absence of RAM, we only use FLAG. 
+    ucontrol flag 100000 #In absence of RAM, we only use FLAG. 
 
 roaming:
     jump roamingDefault equal isRAM false
@@ -242,7 +248,7 @@ roaming:
 
 
 ##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
-doWMEMread:
+doWMEMread: #WMEM Read - Read from RAM Address
     waitForReady:
     read isBusy WMEM "isBusy"
     jump waitForReady equal isBusy true
@@ -253,7 +259,7 @@ doWMEMread:
     set ramACK 0
     set @counter reti
 
-doWMEMwrite:
+doWMEMwrite: #WMEM Write - Write to RAM Address
     waitForReady:
     read isBusy WMEM "isBusy"
     jump waitForReady equal isBusy true
@@ -264,7 +270,7 @@ doWMEMwrite:
     set ramACK 0
     set @counter reti
 
-doWMEMlookup:
+doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and len.
     waitForReady:
     read isBusy WMEM "isBusy"
     jump waitForReady equal isBusy true
@@ -276,7 +282,7 @@ doWMEMlookup:
     set ramACK 0
     set @counter reti
 
-doWMEMmalloc:
+doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR back.
     waitForReady:
     read isBusy WMEM "isBusy"
     jump waitForReady equal isBusy true

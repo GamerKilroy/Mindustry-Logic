@@ -1,0 +1,94 @@
+# Unit Table garbage collector. wProc running at low intensity, scanning Dynamic Memory for units
+# Read or Write requests get in via remote commands write to the following variable:
+
+set baseUnitMemoryAddr 1000
+set baseUnitMemoryLen 3900
+set baseSquadMemoryAddr 7000
+set baseSquadMemoryLen 3700
+
+jump doInit equal doneInit 0
+jump memread equal req 1
+jump memwrite equal req 2
+jump memlookup equal req 3
+jump memlookuptarget equal 4
+jump malloc equal req 10
+jump free equal req 11
+jump fullReset equal req 99
+jump maintenanceloop greaterThan @second lastSecond
+
+set cleanTarget 0
+
+doInit:
+    set RAMLOOKUP processor1
+    read maxRAM RAMLOOKUP maxRAM
+    set ROMLOOKUP processor2
+    set unitMemoryPointer baseUnitMemoryAddr
+    op add maxUnitMemory unitMemoryPointer baseUnitMemoryAddr
+    set squadMemoryPointer baseSquadMemoryAddr
+    op add maxSquadMemory squadMemoryPointer baseSquadMemoryLen
+
+doReset:
+    set req 0
+    set addr 0
+    set inbuffer 0
+    set ACKtarget 0
+    set isBusy 0
+    set doneInit true
+    set reqLen 0
+    setrate 8
+    end
+
+memlookuptarget:
+    set isBusy true
+    set i baseUnitMemoryAddr
+    op add maxLookup baseUnitMemoryAddr baseUnitMemoryLen
+    setrate 500
+    continueLookupTarget:
+        op mod ramvnameidx i 6000 #Get the memory address IN the ram
+        op idiv ramprocidx i 6000 #Get the number of the memory bank
+        lookup block vname ramprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
+        op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
+        lookup block vname romprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
+        op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
+        lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
+        sensor vnameforrom vnameforromblock @name 
+        read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
+        read currLookup RAMref actualvarname
+        sensor toClean currLookup @dead 
+        jump continueLookupTarget equal toClean false
+        set toClean i 
+        jump free always 0 0
+
+
+    jump memlookuptarget always 0 0
+end
+
+free:
+    set isBusy true
+    set j addr
+    op add freeSize addr 32
+    setrate 500
+    continueFree:
+        op mod ramvnameidx j 6000 #Get the memory address IN the ram
+        op idiv ramprocidx j 6000 #Get the number of the memory bank
+        lookup block vname ramprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
+        op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
+        lookup block vname romprocidx #Lookup to convert to String + Name
+        sensor vname vname @name
+        read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
+        op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
+        lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
+        sensor vnameforrom vnameforromblock @name 
+        read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
+        write null RAMref actualvarname
+        op add j 1
+        jump continueFree lessThan i freeSize
+
+    jump continueLookupTarget always 0 0
+end
