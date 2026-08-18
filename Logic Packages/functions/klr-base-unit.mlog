@@ -31,16 +31,10 @@ sensor bitpack @unit @flag
 op mod ADDR bitpack 100000
 op div FLAG bitpack 100000
 
-jump ramInactive equal ADDR 0  ##Check if we already have RAM active.
-set isRAM 1
-jump endRamCheck always 0 0
-ramInactive:
-set isRAM 0
-endRamCheck:
+op isRAM greaterThan ADDR 0
 
 
 jump init equal flag 0    # If the unit does not have a memory space yet, initialize
-
 jump roaming equal flag 1
 
 end

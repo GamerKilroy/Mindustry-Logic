@@ -1,16 +1,18 @@
 ## KLR-AI-EXPANDED DESIGN DOCUMENT
 
 1. Goals and considerations
- a. The Different Levels of AI
- b. The Units
- c. The Squads
+    a. The Different Levels of AI
+    b. The Units
+    c. The Squads
 2. The OpenBus - Async Atomic Memory Map
- a. The RAMProcs & ROMProcs
- b. The RAMACCESS Processor
- c. Dynamic Memory Allocation
- d. Garbage Collection
+    a. The RAMProcs & ROMProcs
+    b. The RAMACCESS Processor
+    c. Dynamic Memory Allocation
+    d. Garbage Collection
 3. The Unit Modules
 4. The Squad Modules
+    a. How a squad is made
+    b. What are the goals of squads
 5. The Gamemaster
 6. World Events
 7. General Unit Overview
@@ -157,4 +159,57 @@ The Squad Calculations are repeated for the units in squad, depending on the log
 
 Squad Disbanding never happens naturally: Once a unit is a part of the squad it remains part of it. The GC will eventually find all leaders as dead and mark the squad as inactive, prompting all units to return to base OBAI or KAI logic. 
 
+#### a. How a squad is made
+Squads are composed of 3 main components:
+- The Leader
+- The Sergeants
+- The Soldiers
 
+The Leader is the one calling the shots. There is always, only one leader in a Squad. If the leader dies, then the first available Sergeant becomes the new Leader
+The Sergeants are other leaders that did not create a squad because one exists already. They are placed into a special Sergeant List and will become new leaders as needed due to the squad thinning out.
+The Soldiers are all the other units in the squad. They possess no capabilities of leadership and will simply follow orders. A Soldier can never become a Leader nor a Sergeant.
+
+The first unit to create the squad become the Leader by default. It will immediately start processing squad information.
+Every other leader that tries to create the same type of squad (with some exceptions) will be put into the Sergeant list instead.
+
+Soldiers will look for available squads at RAM allocation and every second. This way, soldiers that are left without a valid squad will try to look for a new one to join.
+
+#### b. What are the goals of Squads
+Squads are a way to provide advanced unit cooperation without relying on manually deciding logic for each possible combination.
+Due to squads being dynamically created, they can also contain completely different units every single wave, leading to completely different logic.
+
+For instance, Crawlers can join either a Meatshield Squad, a Shield Assault Squad, or a Wait Aggro squad.
+If a Quasar is present (Shield Assault Squad), it will use the Quasar's shield to make those Crawlers more likely to reach the walls.
+If a Fortress is present (Meatshield Squad), it will use the Crawlers as a body shield while shooting your turrets from afar.
+If a Sceptre is present (Wait Aggro Squad), the crawlers will wait for the Sceptre to take damage before rushing in from the second line.
+
+Many more of those interactions can be programmed, and will natively happen as the waves mix and match their units depending on spawn.
+The important part is keeping Squads for one goal and one goal only - This makes it possible to pre-set which units will behave in a particular way depending on squad type.
+
+The Squad Management should be the most interesting part of the maps, as it will vary enemy tactics in an always dynamic manner - A way that even the map creator may be unable to properly predict.
+
+### 5. The Gamemaster
+The Gamemaster is the main world processor that makes the game run smoothly. Not only it's the initializer for all kinds of configuration (For instance, RAM init from ROM), but it's also the system to keep track of waves and game progression.
+
+The Gamemaster is always active on game start, and is linked to the main control display for Game Control.
+The Game Control display is the way for the user to set the AI difficulty (By enabling or disabling certain logic modules) and start the wave timer.
+
+The Gamemaster is also responsible for changing parameters through the course of the game. For instance, certain OBAI units will look in memory for their parameters. Those can be set on a wave number or event basis by the Gamemaster. 
+
+There is also a World Event system, which may make stuff happen depending on certain parameters. For instance, destroy part of the map, run cuscenes, spawn materials or blocks, or even more.
+World Events are always started by the Gamemaster (and are in fact usually saved there). There are not many World Events per map.
+
+### 6. World Events
+Some gameplay actions may lead to what are commonly called World Events.
+World Events are sequences of actions that, when triggered, will alter the gameplay somehow.
+It could be the creation of new enemy pathways, the activation or deactivation of certain Unit or Squad modules, cutscenes and many more.
+
+World Events are usually either Wave Based, or Unit Location Based.
+
+Wave Based World Events happen when the Wave Number reaches a certain value for the first time. Examples of this include cutscenes, special enemy spawns, KLR logic changes and more.
+Unit Location World Events are usually linked to "boss" units. For instance, Miniboss Guardians are a great source of Unit Location world events. Those events happen if/when the selected unit is within a certain range of a waypoint. Examples include units using weapons on "the world" (aka breaking blocks), the units building a certain structure, or even more advanced logic on a case-to-case basis. Those events can be completely prevented from happening... as long as their trigger never happens.
+
+Discovering the various trigger for the World Events is meant to be part of the fun of my maps. Some resources may be completely blocked behind World Events, but some can also make the run even harder.
+
+### 7. General Unit Overview
+### 8. General Squad Overview
