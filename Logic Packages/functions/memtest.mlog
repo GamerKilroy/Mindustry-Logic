@@ -1,0 +1,15 @@
+sensor doReq switch2 @enabled
+draw triangle ramACK b c d e f
+jump doNothing: equal doReq false
+
+
+jump waitReady1 
+write "test Salate2" processor1 "inbuffer"
+write @this processor1 "ACKtarget"
+write 200 processor1 "addr"
+write 4 processor1 "req"
+control enabled switch2 0 0 0 0
+set result 0
+
+doNothing:
+noop

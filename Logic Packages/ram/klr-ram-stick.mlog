@@ -26,16 +26,17 @@ set baseUnitMemoryAddr 1000
 set baseUnitMemoryLen 3900
 set baseSquadMemoryAddr 7000
 set baseSquadMemoryLen 3700
+draw triangle ACKtarget lastACKtarget p1 p2 p3 p4
 
 jump doInit equal doneInit 0
 jump memread equal req 1
 jump memwrite equal req 2
 jump memlookup equal req 3
-jump memlookuptarget equal 4
+jump memlookuptarget equal req 4
 jump malloc equal req 10
 jump free equal req 11
 jump fullReset equal req 99
-jump maintenanceloop greaterThan @second lastSecond
+end
 
 doInit:
     set RAMLOOKUP processor1
@@ -47,13 +48,16 @@ doInit:
     op add maxSquadMemory squadMemoryPointer baseSquadMemoryLen
 
 doReset:
+    set lastReq req
     set req 0
+    set lastaddr addr
     set addr 0
+    set lastbuffer inbuffer
     set inbuffer 0
-    set ACKtarget 0
     set isBusy 0
     set doneInit true
     set reqLen 0
+    set lastACKtarget ACKtarget
     setrate 8
     end
 
@@ -75,7 +79,7 @@ memread:
     read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
     read value RAMref actualvarname #Read from RAM the Variable Value
 
-    write value ACKtarget "WMEMBUFFER_OUT"
+    write value ACKtarget "WMEMBUFF_OUT"
     write 1 ACKtarget "ramACK" #Send the Variable Value to the ACKtarget
 
     jump doReset always 0 0
@@ -133,7 +137,7 @@ memlookup:
 
     lookupDone:
     
-    write i ACKtarget "WMEMBUFFER_OUT"
+    write i ACKtarget "WMEMBUFF_OUT"
     write 1 ACKtarget "ramACK"
     jump doReset always 0 0
 
@@ -161,12 +165,12 @@ memlookuptarget:
         op add i 1
         jump continueLookupTarget lessThan i maxLookup
         set i -1
-        jump lookupTarget Done equal currLookup inbuffer
+        jump lookupTargetDone equal currLookup inbuffer
     end
 
     lookupTargetDone:
    
-    write i ACKtarget "WMEMBUFFER_OUT"
+    write i ACKtarget "WMEMBUFF_OUT"
     write 1 ACKtarget "ramACK"
 
     jump doReset always 0 0
@@ -179,20 +183,20 @@ malloc:
 
     unitMalloc:
         jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
-        write unitMemoryPointer ACKtarget "WMEMBUFFER_OUT"
+        write unitMemoryPointer ACKtarget "WMEMBUFF_OUT"
         op add unitMemoryPointer unitMemoryPointer 16
         write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 
     squadMalloc:
         jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
-        write squadMemoryPointer ACKtarget "WMEMBUFFER_OUT"
+        write squadMemoryPointer ACKtarget "WMEMBUFF_OUT"
         op add squadMemoryPointer squadMemoryPointer 128
         write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 
     outOfMemory:
-        write -1 ACKtarget "WMEMBUFFER_OUT"
+        write -1 ACKtarget "WMEMBUFF_OUT"
         write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 end
@@ -251,61 +255,3 @@ fullReset:
 
     jump doReset always 0 0
 end
-
-
-maintenanceloop:
-query rect unit @crux 0 0 0 @mapw @unitMaxHP
-read atLeastOneEnemy @queries 0
-jump enemiesAlive notEqual atLeastOneEnemy false
-    jump noCleanup equal didCleanup true
-        set didCleanup true
-        set isBusy true
-        set i baseUnitMemoryAddr
-        op add freeSize addr baseUnitMemoryLen
-        setrate 500
-        maintenanceUnitFree:
-            op mod ramvnameidx i 6000 #Get the memory address IN the ram
-            op idiv ramprocidx i 6000 #Get the number of the memory bank
-            lookup block vname ramprocidx #Lookup to convert to String + Name
-            sensor vname vname @name
-            read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
-            op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
-            lookup block vname romprocidx #Lookup to convert to String + Name
-            sensor vname vname @name
-            read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
-            op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
-            lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
-            sensor vnameforrom vnameforromblock @name 
-            read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
-            write null RAMref actualvarname
-            op add i 1
-            jump maintenanceUnitFree lessThan i freeSize
-
-        set i baseSquadMemoryAddr
-        op add freeSize addr baseSquadMemoryLen
-        maintenanceSquadFree:
-            op mod ramvnameidx i 6000 #Get the memory address IN the ram
-            op idiv ramprocidx i 6000 #Get the number of the memory bank
-            lookup block vname ramprocidx #Lookup to convert to String + Name
-            sensor vname vname @name
-            read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
-            op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
-            lookup block vname romprocidx #Lookup to convert to String + Name
-            sensor vname vname @name
-            read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
-            op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
-            lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
-            sensor vnameforrom vnameforromblock @name 
-            read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
-            write null RAMref actualvarname
-            op add i 1
-            jump maintenanceSquadFree lessThan i freeSize
-
-        jump doReset always 0 0
-
-    noCleanup:
-    jump doInit always 0 0
-enemiesAlive:
-set didCleanup false
-end
-
