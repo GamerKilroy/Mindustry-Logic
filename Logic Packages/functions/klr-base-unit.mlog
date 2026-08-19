@@ -49,6 +49,7 @@ init:
     op add reti @counter 2 #Otherwise, ask for variable allocation and receive back your ADDR  
     jump doWMEMmalloc always 0 0
     set reti 0
+    set test1 true
 
     op mul bitpack 1 100000                #Calculate new bitpacked flag, set it, and set ADDR for this cycle.
     op add bitpack bitpack WMEMBUFF_OUT
@@ -58,7 +59,9 @@ init:
     set WMEM_ADDR ADDR
     set WMEMBUFF_IN @unit
     op add reti @counter 2
+    set test2 true
     jump doWMEMwrite always 0 0
+    set test3 true
     set reti 0
 
     end

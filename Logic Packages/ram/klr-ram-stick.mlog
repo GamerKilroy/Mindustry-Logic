@@ -193,15 +193,16 @@ malloc:
     unitMalloc:
         jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
 
-        waitForStackUnit:
-        sensor stackBusy POINTERCELL 0
-        jump waitForStackUnit equal stackBusy 1
-
-        write 1 POINTERCELL 0
-        read unitMemoryPointer POINTERCELL 1
-        op add newUnitMemoryPointer unitMemoryPointer 16
-        write newUnitMemoryPointer POINTERCELL 1
-        write 0 POINTERCELL 0
+        set unitMemoryPointer 2032
+        #waitForStackUnit:
+        #sensor stackBusy POINTERCELL 0
+        #jump waitForStackUnit equal stackBusy 1
+#
+        #write 1 POINTERCELL 0
+        #read unitMemoryPointer POINTERCELL 1
+        #op add newUnitMemoryPointer unitMemoryPointer 16
+        #write newUnitMemoryPointer POINTERCELL 1
+        #write 0 POINTERCELL 0
 
         write unitMemoryPointer ACKtarget "WMEMBUFF_OUT"
         write 1 ACKtarget "ramACK"
