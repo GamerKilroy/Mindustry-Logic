@@ -232,7 +232,7 @@ roaming:
         ucontrol targetp currTarget doShoot    
 
         # Insert specific basic unit movement here
-        ucontrol approach 100 100 1
+        ucontrol approach 0 0 0
         end
 
     roamingRAM:     #700 lines left available for custom logic!

@@ -42,22 +42,31 @@ doInit:
     set RAMLOOKUP processor1
     read maxRAM RAMLOOKUP maxRAM
     set ROMLOOKUP processor2
+    set POINTERCELL cell1
     set unitMemoryPointer baseUnitMemoryAddr
     op add maxUnitMemory unitMemoryPointer baseUnitMemoryAddr
     set squadMemoryPointer baseSquadMemoryAddr
     op add maxSquadMemory squadMemoryPointer baseSquadMemoryLen
 
 doReset:
-    set lastReq req
+    set lasreq req
     set req 0
+
     set lastaddr addr
     set addr 0
+
     set lastbuffer inbuffer
     set inbuffer 0
+
+    set lastACKtarget ACKtarget
+
+    set lastreqlen reqLen
+    set reqLen 0
+
     set isBusy 0
     set doneInit true
-    set reqLen 0
-    set lastACKtarget ACKtarget
+    
+    
     setrate 8
     end
 
@@ -183,15 +192,35 @@ malloc:
 
     unitMalloc:
         jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
+
+        waitForStackUnit:
+        sensor stackBusy POINTERCELL 0
+        jump waitForStackUnit equal stackBusy 1
+
+        write 1 POINTERCELL 0
+        read unitMemoryPointer POINTERCELL 1
+        op add newUnitMemoryPointer unitMemoryPointer 16
+        write newUnitMemoryPointer POINTERCELL 1
+        write 0 POINTERCELL 0
+
         write unitMemoryPointer ACKtarget "WMEMBUFF_OUT"
-        op add unitMemoryPointer unitMemoryPointer 16
         write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 
     squadMalloc:
         jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
+
+        waitForStackSquad:
+        sensor stackBusy POINTERCELL 2
+        jump waitForStackUnit equal stackBusy 1
+
+        write 1 POINTERCELL 2
+        read squadMemoryPointer POINTERCELL 3
+        op add newSquadMemoryPointer squadMemoryPointer 128
+        write newSquadMemoryPointer POINTERCELL 3
+        write 0 POINTERCELL 2
+
         write squadMemoryPointer ACKtarget "WMEMBUFF_OUT"
-        op add squadMemoryPointer squadMemoryPointer 128
         write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 
