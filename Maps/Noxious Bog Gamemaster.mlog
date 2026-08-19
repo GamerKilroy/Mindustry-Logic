@@ -39,8 +39,10 @@ noDifficultyChange:
 
 sensor touchXbase display1 @x #base display touch calculation
 sensor touchYbase display1 @y
-sensor mouseX @clientUnit @shootx
-sensor mouseY @clientUnit @shooty
+sensor mouseX @clientUnit @shootX
+sensor mouseY @clientUnit @shootY
+op sub touchXbase touchXbase 1
+op sub touchYbase touchYbase 1
 op sub touchX mouseX touchXbase
 op sub touchY mouseY touchYbase
 op div pixTouchX touchX 6
@@ -50,17 +52,15 @@ op sub pixTouchY pixTouchY 8
 op mul pixTouchX pixTouchX 28
 op mul pixTouchY pixTouchY 28
 
-op add reti @counter 1
+op add reti @counter 2
 jump drawScreen equal gamestate 0
+jump drawScreen equal gamestate 1
 
 op add reti @counter 1
 jump gameInit equal gamestate 0 #Write all INIT data to ROM
 
 op add reti @counter 1
 jump beforeGameStart equal gamestate 1 #Difficulty selection & Game Start
-
-op add reti @counter 1
-jump duringWaves equal gamestate 2
 
 end
 
@@ -77,9 +77,11 @@ gameInit:
         op add disableBuildingPointer 1
         jump disableSingleBuilder lessThan disableBuildingPointer playerCount
 
+    set retiMem reti
     op add reti @counter 2
     jump resetPointers always 0 0
     set reti 0
+    set reti retiMem
 
     set gamestate 1
     set @counter reti
@@ -112,66 +114,74 @@ resetPointers:
 
 drawScreen:
 
-    packcolor GREEN_BRIGHT 0 255 0 255
-    packcolor GREEN_DARK 0 50 0 255
-    packcolor GREEN_SELECTED 0 100 0 255
+    packcolor GREEN_BRIGHT 0 1 0 1
+    packcolor GREEN_DARK 0 1 0 0.2
 
-    packcolor YELLOW_BRIGHT 200 200 0 255
-    packcolor YELLOW_DARK 50 50 0 255
-    packcolor YELLOW_SELECTED 100 100 0 255
+    packcolor YELLOW_BRIGHT 1 0.7 0 1
+    packcolor YELLOW_DARK 1 0.7 0 0.2
 
-    packcolor RED_BRIGHT 255 0 0 255
-    packcolor RED_DARK 50 0 0 255
-    packcolor RED_SELECTED 100 0 0 255
+    packcolor RED_BRIGHT 1 0 0 1
+    packcolor RED_DARK 1 0 0 0.2
 
-    packcolor PURPLE_BRIGHT 200 0 200 255
-    packcolor PURPLE_DARK 50 0 50 255
-    packcolor PURPLE_SELECTED 100 0 100 255
+    packcolor PURPLE_BRIGHT 1 0 0.7 1
+    packcolor PURPLE_DARK 1 0 0.7 0.2
 
-    draw clear 10 10 10
+    packcolor IS_SELECTED 1 1 1 0.5
+
+    draw clear 50 50 50
     draw stroke 2
+    draw color 0 0 0 255
+    draw linerect 0 0 176 176
 
     draw col GREEN_DARK
     jump easyColorNotSelected notEqual gameDifficulty 0
-        draw col GREEN_SELECTED
+        set COLOR_SELECTED GREEN_BRIGHT
+        draw col IS_SELECTED
     easyColorNotSelected:
-    draw rect 4 92 34 70
+    draw rect 1 40 18 25
     draw col GREEN_BRIGHT
-    draw rectLine 4 92 34 70
-    draw line 12 96 30 158  
+    draw lineRect 1 40 18 25
+    #draw line 12 96 34 158  
 
     draw col YELLOW_DARK
     jump normalColorNotSelected notEqual gameDifficulty 1
-        draw col YELLOW_SELECTED
+        set COLOR_SELECTED YELLOW_BRIGHT
+        draw col IS_SELECTED
     normalColorNotSelected:
-    draw rect 44 92 34 70
+    draw rect 21 40 18 25
     draw col YELLOW_BRIGHT
-    draw rectLine 44 92 34 70
-    draw line 50 96 68 158 
-    draw line 54 96 72 158
+    draw lineRect 21 40 18 25
+    #draw line 58 96 76 158 
+    #draw line 62 96 80 158
 
     draw col RED_DARK
     jump hardColorNotSelected notEqual gameDifficulty 2
-        draw col RED_SELECTED
+        set COLOR_SELECTED RED_BRIGHT
+        draw col IS_SELECTED
     hardColorNotSelected:
-    draw rect 84 92 34 70
+    draw rect 41 40 18 25 
     draw col RED_BRIGHT
-    draw rectLine 84 92 34 70
-    draw line 88 96 106 154 
-    draw line 92 92 110 158
-    draw line 96 96 114 154
+    draw lineRect 41 40 18 25 
+    #draw line 88 96 106 154 
+    #draw line 92 92 110 158
+    #draw line 96 96 114 154
 
     draw col PURPLE_DARK
     jump eradColorNotSelected notEqual gameDifficulty 3
-        draw col PURPLE_SELECTED
+        set COLOR_SELECTED PURPLE_BRIGHT
+        draw col IS_SELECTED
     eradColorNotSelected:
-    draw rect 124 92 34 70
+    draw rect 61 40 18 25
     draw col PURPLE_BRIGHT
-    draw rectLine 124 92 34 70
-    draw line 128 96 146 154 
-    draw line 132 92 150 158
-    draw line 136 96 154 154
-    draw line 126 160 156 90
+    draw lineRect 61 40 18 25
+    #draw line 128 96 146 154 
+    #draw line 132 92 150 158
+    #draw line 136 96 154 154
+    #draw line 126 160 156 90
+
+    draw stroke 20
+    draw col COLOR_SELECTED
+    draw line 0 80 80 80
 
     drawflush display1
     set @counter reti

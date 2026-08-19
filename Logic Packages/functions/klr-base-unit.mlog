@@ -27,7 +27,7 @@ hasUnit:
 
 sensor bitpack @unit @flag
 op mod ADDR bitpack 100000
-op div FLAG bitpack 100000
+op idiv FLAG bitpack 100000
 
 op greaterThan hasRAM ADDR 0
 
@@ -239,7 +239,8 @@ roaming:
         end
 
     roamingRAM:     #700 lines left available for custom logic!
-
+        ucontrol approach 0 0 0
+        end
 
 
 ##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.

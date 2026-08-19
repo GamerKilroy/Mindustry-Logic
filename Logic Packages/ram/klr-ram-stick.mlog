@@ -48,6 +48,8 @@ doInit:
     set squadMemoryPointer baseSquadMemoryAddr
     op add maxSquadMemory squadMemoryPointer baseSquadMemoryLen
 
+    set doneInit true
+
 doReset:
     set lasreq req
     set req 0
@@ -63,11 +65,10 @@ doReset:
     set lastreqlen reqLen
     set reqLen 0
 
+    write 1 ACKtarget "ramACK"
     set isBusy 0
     set doneInit true
-    
-    
-    setrate 8
+
     end
 
 memread:
@@ -89,7 +90,7 @@ memread:
     read value RAMref actualvarname #Read from RAM the Variable Value
 
     write value ACKtarget "WMEMBUFF_OUT"
-    write 1 ACKtarget "ramACK" #Send the Variable Value to the ACKtarget
+     #Send the Variable Value to the ACKtarget
 
     jump doReset always 0 0
 end
@@ -103,18 +104,20 @@ memwrite:
     sensor vname vname @name
     read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
     op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
-    set testing1 romprocidx
+    set testing1 true
     lookup block vname romprocidx #Lookup to convert to String + Name
     sensor vname vname @name
-    set testing2 vname
+    set testing2 true
     read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
     op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
     lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
     sensor vnameforrom vnameforromblock @name 
     read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
     write inbuffer RAMref actualvarname #Write the variable to memory.
-    write 1 ACKtarget "ramACK" #Confirm write to ACKtarget
+    set testing3 true
+    #write 1 ACKtarget "ramACK" #Confirm write to ACKtarget
     set isBusy false #Write completed, remove busy return to normal IPT.
+    set testing4 true
     jump doReset always 0 0
 end
 
@@ -147,7 +150,7 @@ memlookup:
     lookupDone:
     
     write i ACKtarget "WMEMBUFF_OUT"
-    write 1 ACKtarget "ramACK"
+    #write 1 ACKtarget "ramACK"
     jump doReset always 0 0
 
 memlookuptarget:
@@ -180,7 +183,7 @@ memlookuptarget:
     lookupTargetDone:
    
     write i ACKtarget "WMEMBUFF_OUT"
-    write 1 ACKtarget "ramACK"
+    #write 1 ACKtarget "ramACK"
 
     jump doReset always 0 0
 end
@@ -221,12 +224,12 @@ malloc:
         write 0 POINTERCELL 2
 
         write squadMemoryPointer ACKtarget "WMEMBUFF_OUT"
-        write 1 ACKtarget "ramACK"
+        #write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 
     outOfMemory:
         write -1 ACKtarget "WMEMBUFF_OUT"
-        write 1 ACKtarget "ramACK"
+        #write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 end
 
@@ -253,7 +256,7 @@ free:
         op add i 1
         jump continueFree lessThan i freeSize
    
-    write 1 ACKtarget "ramACK"
+    #write 1 ACKtarget "ramACK"
 
     jump doReset always 0 0
 end
@@ -280,7 +283,7 @@ fullReset:
         op add i 1
         jump continueFullReset lessThan i maxRAM
    
-    write 1 ACKtarget "ramACK"
+    #write 1 ACKtarget "ramACK"
 
     jump doReset always 0 0
 end
