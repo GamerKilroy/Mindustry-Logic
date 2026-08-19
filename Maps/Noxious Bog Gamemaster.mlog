@@ -1,14 +1,29 @@
 # Noxious Bog Gamemaster
 # Manages the gamestate, initializes waypoints, requests cutscenes and more.
 
-setrate 200
+setrate 20
 set WMEM processor1 # Link to ram
 
-jump initialize equal gamestate 0
+jump beforeGameStart equal gamestate 0
 
 end
 
+beforeGameStart:
+    op mod secMod @second 2
+    jump mission1text equal secMod 0
+    jump mission2text equal secMod 1
 
+    mission1text:
+        print "Game not started yet"
+        message mission 1
+        jump textDone always 0 0 
+        
 
-initialize:
-write 
+    mission2text:
+        print "Start game from Touchscreen"
+        message mission 1
+        jump textDone always 0 0
+
+    textDone:
+
+    

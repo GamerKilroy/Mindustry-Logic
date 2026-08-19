@@ -31,8 +31,8 @@ op div FLAG bitpack 100000
 
 op greaterThan hasRAM ADDR 0
 
-jump init equal flag 0    # If the unit does not have a memory space yet, initialize
-jump roaming equal flag 1
+jump init equal FLAG 0    # If the unit does not have a memory space yet, initialize
+jump roaming equal FLAG 1
 
 end
 
@@ -46,8 +46,9 @@ init:
     #jump doWMEMlookup always 0 0
 
     jump noRam equal WMEM null      #If disabled, act as if no RAM is available       
-    op add reti @counter 1 #Otherwise, ask for variable allocation and receive back your ADDR  
+    op add reti @counter 2 #Otherwise, ask for variable allocation and receive back your ADDR  
     jump doWMEMmalloc always 0 0
+    set reti 0
 
     op mul bitpack 1 100000                #Calculate new bitpacked flag, set it, and set ADDR for this cycle.
     op add bitpack bitpack WMEMBUFF_OUT
@@ -56,8 +57,9 @@ init:
 
     set WMEM_ADDR ADDR
     set WMEMBUFF_IN @unit
-    op add reti @counter 1
+    op add reti @counter 2
     jump doWMEMwrite always 0 0
+    set reti 0
 
     end
 
@@ -194,7 +196,7 @@ roaming:
         set targetX unitX
         set targetY unitY
         set maxWeight unitScaled
-        sensor unitMaxHP @enemyUnit @maxHealth  # If the enemy unit has less HP than the PDS threshold, it will use PDS ranges - This way it won't fire slow main weapons at a faraway flare.
+        sensor unitMaxHP enemyUnit @maxHealth  # If the enemy unit has less HP than the PDS threshold, it will use PDS ranges - This way it won't fire slow main weapons at a faraway flare.
         jump bigEnough greaterThan unitMaxHP PDSThreshold
         set isPDSMode true 
         noUnit:
@@ -221,7 +223,13 @@ roaming:
         set doShoot true
         outOfRangePDS:
 
-        ucontrol targetp currTarget doShoot    
+        jump rotateToCore equal doShoot false
+        ucontrol targetp currTarget doShoot   
+        jump doMovement always 0 0
+        rotateToCore:
+        ucontrol target coreX coreY 0
+
+        doMovement: 
 
         # Insert specific basic unit movement here
         ucontrol approach 0 0 0
