@@ -4,13 +4,7 @@ setrate 500
 set TARGET_UNIT @flare
 
 set WMEM processor1   #RAM Initialization - Do not touch
-set WMEM_ADDR 0
-set REQTYPE 0
-set WMEMBUFF_IN 0
-set WMEMBUFF_OUT 0
-set WMEMBUFF_LEN 0
-set ramACK 0
-set stackPointer 0
+draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
 set turretWeight 1  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
@@ -40,8 +34,6 @@ op greaterThan hasRAM ADDR 0
 jump init equal flag 0    # If the unit does not have a memory space yet, initialize
 jump roaming equal flag 1
 
-jump init always 0 0
-
 end
 
 init:
@@ -58,9 +50,9 @@ init:
     jump doWMEMmalloc always 0 0
 
     op mul bitpack 1 100000                #Calculate new bitpacked flag, set it, and set ADDR for this cycle.
-    op add bitpack newFlag WMEMBUFF_OUT
+    op add bitpack bitpack WMEMBUFF_OUT
     set ADDR WMEMBUFF_OUT
-    ucontrol flag newFlag
+    ucontrol flag bitpack
 
     set WMEM_ADDR ADDR
     set WMEMBUFF_IN @unit
@@ -245,7 +237,7 @@ doWMEMread: #WMEM Read - Read from RAM Address
     read isBusy WMEM "isBusy"
     jump waitForReadyRead equal isBusy true
     write @this WMEM "ACKtarget"
-    write ADDR WMEM "addr"
+    write WMEM_ADDR WMEM "addr"
     write WMEMBUFF_IN WMEM "inbuffer"
     write 1 WMEM "req"
     waitACKRead: ; jump waitACKRead equal ramACK 0
@@ -257,7 +249,7 @@ doWMEMwrite: #WMEM Write - Write to RAM Address
     read isBusy WMEM "isBusy"
     jump waitForReadyWrite equal isBusy true
     write @this WMEM "ACKtarget"
-    write ADDR WMEM "addr"
+    write WMEM_ADDR WMEM "addr"
     write WMEMBUFF_IN WMEM "inbuffer"
     write 2 WMEM "req"
     waitACKWrite: ; jump waitACKWrite equal ramACK 0
@@ -269,7 +261,7 @@ doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and le
     read isBusy WMEM "isBusy"
     jump waitForReadyLookup equal isBusy true
     write @this WMEM "ACKtarget"
-    write ADDR WMEM "addr"
+    write WMEM_ADDR WMEM "addr"
     write WMEMBUFF_IN WMEM "inbuffer"
     write WMEMBUFF_LEN "reqLen"
     write 4 WMEM "req"
@@ -282,7 +274,7 @@ doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR b
     read isBusy WMEM "isBusy"
     jump waitForReadyMalloc equal isBusy true
     write @this WMEM "ACKtarget"
-    write ADDR WMEM "addr"
+    write WMEM_ADDR WMEM "addr"
     write WMEMBUFF_IN WMEM "inbuffer"
     write 1 WMEM "reqLen"
     write 10 WMEM "req"
