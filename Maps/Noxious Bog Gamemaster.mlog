@@ -4,9 +4,85 @@
 setrate 20
 set WMEM processor1 # Link to ram
 
-jump beforeGameStart equal gamestate 0
+set baseUnitMemoryAddr 1000 #Base memory addresses for stack pointer refresh
+set baseUnitMemoryLen 3900
+set baseSquadMemoryAddr 7000
+set baseSquadMemoryLen 3700
+
+jump noCyclic equal @second lastSecond #1Hz Rising Edge
+    set fp1hz true
+    set lastsecond @second
+    jump endCyclic always 0 0
+noCyclic:
+    set fp1hz false
+endCyclic:
+
+jump noDifficultyChange equal gameDifficulty lastGameDifficulty
+    set lastGameDifficulty gameDifficulty
+
+    jump noEasySelectedNow notEqual gameDifficulty 0
+        print "[#00ff00]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. No extra enemy spawns. Reduced WorldEvent Intensity."
+    noEasySelectedNow:
+    jump noMediumSelectedNow notEqual gameDifficulty 1
+        print "[#CCCC00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Extra enemy spawns dependant on WorldEvents."
+    noMediumSelectedNow:
+    jump noHardSelectedNow notEqual gameDifficulty 2
+        print "[#FF0000]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
+    noHardSelectedNow:
+    jump noEradSelectedNow notEqual gameDifficulty 3
+        print "[#FF00FF]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and spawn more often. Guardians are much harder and have even more mechanics"
+    noEradSelectedNow:
+
+doneChangingDifficulty:
+noDifficultyChange:
+
+
+sensor touchXbase display1 @x #base display touch calculation
+sensor touchYbase display1 @y
+sensor mouseX @clientUnit @shootx
+sensor mouseY @clientUnit @shooty
+op sub touchX mouseX touchXbase
+op sub touchY mouseY touchYbase
+op div pixTouchX touchX 6
+op div pixTouchY touchY 6
+op sub pixTouchX pixTouchX 8
+op sub pixTouchY pixTouchY 8
+op mul pixTouchX pixTouchX 28
+op mul pixTouchY pixTouchY 28
+
+op add reti @counter 1
+jump drawScreen equal gamestate 0
+
+op add reti @counter 1
+jump gameInit equal gamestate 0 #Write all INIT data to ROM
+
+op add reti @counter 1
+jump beforeGameStart equal gamestate 1 #Difficulty selection & Game Start
+
+op add reti @counter 1
+jump duringWaves equal gamestate 2
 
 end
+
+gameInit:
+
+    set gameDifficulty 1
+
+    set disableBuildingPointer 0
+    fetch playerCount totalPlayers @sharded 0 0
+
+    disableSingleBuilder:
+        fetch unit currUnit @sharded 0 disableBuildingPointer
+        setprop @buildSpeed currUnit -1
+        op add disableBuildingPointer 1
+        jump disableSingleBuilder lessThan disableBuildingPointer playerCount
+
+    op add reti @counter 2
+    jump resetPointers always 0 0
+    set reti 0
+
+    set gamestate 1
+    set @counter reti
 
 beforeGameStart:
     op mod secMod @second 2
@@ -14,16 +90,88 @@ beforeGameStart:
     jump mission2text equal secMod 1
 
     mission1text:
-        print "Game not started yet"
+        print "Wave timer paused"
         message mission 1
         jump textDone always 0 0 
         
 
     mission2text:
-        print "Start game from Touchscreen"
+        print "Select difficulty and START"
         message mission 1
         jump textDone always 0 0
 
     textDone:
+    set @counter reti
 
     
+
+resetPointers:
+    write baseUnitMemoryAddr cell1 1
+    write baseSquadMemoryAddr cell1 3
+    set @counter reti
+
+drawScreen:
+
+    packcolor GREEN_BRIGHT 0 255 0 255
+    packcolor GREEN_DARK 0 50 0 255
+    packcolor GREEN_SELECTED 0 100 0 255
+
+    packcolor YELLOW_BRIGHT 200 200 0 255
+    packcolor YELLOW_DARK 50 50 0 255
+    packcolor YELLOW_SELECTED 100 100 0 255
+
+    packcolor RED_BRIGHT 255 0 0 255
+    packcolor RED_DARK 50 0 0 255
+    packcolor RED_SELECTED 100 0 0 255
+
+    packcolor PURPLE_BRIGHT 200 0 200 255
+    packcolor PURPLE_DARK 50 0 50 255
+    packcolor PURPLE_SELECTED 100 0 100 255
+
+    draw clear 10 10 10
+    draw stroke 2
+
+    draw col GREEN_DARK
+    jump easyColorNotSelected notEqual gameDifficulty 0
+        draw col GREEN_SELECTED
+    easyColorNotSelected:
+    draw rect 4 92 34 70
+    draw col GREEN_BRIGHT
+    draw rectLine 4 92 34 70
+    draw line 12 96 30 158  
+
+    draw col YELLOW_DARK
+    jump normalColorNotSelected notEqual gameDifficulty 1
+        draw col YELLOW_SELECTED
+    normalColorNotSelected:
+    draw rect 44 92 34 70
+    draw col YELLOW_BRIGHT
+    draw rectLine 44 92 34 70
+    draw line 50 96 68 158 
+    draw line 54 96 72 158
+
+    draw col RED_DARK
+    jump hardColorNotSelected notEqual gameDifficulty 2
+        draw col RED_SELECTED
+    hardColorNotSelected:
+    draw rect 84 92 34 70
+    draw col RED_BRIGHT
+    draw rectLine 84 92 34 70
+    draw line 88 96 106 154 
+    draw line 92 92 110 158
+    draw line 96 96 114 154
+
+    draw col PURPLE_DARK
+    jump eradColorNotSelected notEqual gameDifficulty 3
+        draw col PURPLE_SELECTED
+    eradColorNotSelected:
+    draw rect 124 92 34 70
+    draw col PURPLE_BRIGHT
+    draw rectLine 124 92 34 70
+    draw line 128 96 146 154 
+    draw line 132 92 150 158
+    draw line 136 96 154 154
+    draw line 126 160 156 90
+
+    drawflush display1
+    set @counter reti
