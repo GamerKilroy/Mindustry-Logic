@@ -3,6 +3,7 @@
 
 setrate 20
 set WMEM processor1 # Link to ram
+draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set baseUnitMemoryAddr 1000 #Base memory addresses for stack pointer refresh
 set baseUnitMemoryLen 3900
@@ -45,24 +46,28 @@ jump noTouchInput equal isShooting false
         set gameDifficulty 0
         print "[#00ff00]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. Little extra enemy spawns. "
         message toast 2
+        set gamestate 2
         jump noTouchInput always 0 0
 
     mediumDifficultyChange:
         set gameDifficulty 1
         print "[#CCCC00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Standard extra enemy spawns."
         message toast 2
+        set gamestate 2
         jump noTouchInput always 0 0
 
     hardDifficultyChange:
         set gameDifficulty 2
         print "[#FF0000]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
         message toast 2
+        set gamestate 2
         jump noTouchInput always 0 0
 
     eradDifficultyChange:
         set gameDifficulty 3
         print "[#FF00FF]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and do not respect wave timer. Guardians are much tougher and have even more mechanics"
         message toast 2
+        set gamestate 2
         jump noTouchInput always 0 0
 
     notDifficultyInput:
@@ -128,12 +133,121 @@ beforeGameStart:
     set @counter reti
 
 runningConfig:
+
+    set WMEM_ADDR 70
+    set WMEMBUFF_IN @dp-klr-sceptre-cr
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 71
+    set WMEMBUFF_IN @dp-klr-vela-jmp
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+    
+    set WMEM_ADDR 50
+    set WMEMBUFF_IN @dp-klr-quasar-jmp
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 51
+    set WMEMBUFF_IN @dp-klr-nova-jmp
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 52
+    set WMEMBUFF_IN @dp-klr-pulsar-sh
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    jump doneConfig equal gameDifficulty 0
+
+    set WMEM_ADDR 72
+    set WMEMBUFF_IN @dp-klr-spiroct-cr
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 53
+    set WMEMBUFF_IN @dp-klr-mace-lr
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 54
+    set WMEMBUFF_IN @fortress
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 55
+    set WMEMBUFF_IN @dp-klr-mega-ds
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 56
+    set WMEMBUFF_IN @dp-klr-spiroct-cc
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 57
+    set WMEMBUFF_IN @dp-klr-atrax-cc
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    jump doneConfig equal gameDifficulty 1
+
+    set WMEM_ADDR 58
+    set WMEMBUFF_IN @dp-klr-flare-ic
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 58
+    set WMEMBUFF_IN @dp-klr-zenith-ic
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 59
+    set WMEMBUFF_IN @dp-klr-fortress-bwl
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    doneConfig:
+    set gamestate 3
+    set @counter reti
+
+gameStarted:
     set @counter reti
 
 resetPointers:
     write baseUnitMemoryAddr cell1 1
     write baseSquadMemoryAddr cell1 3
     set @counter reti
+end
 
 drawScreen:
 
@@ -207,4 +321,35 @@ drawScreen:
     draw line 0 80 80 80
 
     drawflush display1
+    set @counter reti
+end
+
+doWMEMread: #WMEM Read - Read from RAM Address
+    waitForReadyRead:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyRead equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyRead equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write 1 WMEM "req"
+    waitACKRead: ; jump waitACKRead equal ramACK 0
+    set ramACK 0
+    set @counter reti
+
+doWMEMwrite: #WMEM Write - Write to RAM Address
+    waitForReadyWrite:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyWrite equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyWrite equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write 2 WMEM "req"
+    waitACKWrite: ; jump waitACKWrite equal ramACK 0
+    set ramACK 0
     set @counter reti

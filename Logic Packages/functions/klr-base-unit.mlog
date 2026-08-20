@@ -37,36 +37,34 @@ jump roaming equal FLAG 1
 end
 
 init:
+
+    jump noRam equal WMEM null  
  
-    op rand delay 1
-    op div delay delay 100
-    wait delay
-    #sensor unitType @this @type                    #Lookup in Logic Units if this unit type is enabled.
-    #set WMEM_ADDR 50
-    #set REQTYPE 4
-    #set WMEMBUFF_IN unitType
-    #set WMEMBUFF_LEN 50
-    #op add reti @counter 1
-    #jump doWMEMlookup always 0 0
+        op rand delay 1
+        op div delay delay 100
+        wait delay
+        sensor unitType @this @type                    #Lookup in Logic Units if this unit type is enabled.
+        set WMEM_ADDR 50
+        set WMEMBUFF_IN unitType
+        set WMEMBUFF_LEN 50
+        op add reti @counter 1
+        jump doWMEMlookup always 0 0
+        jump noRam equal WMEMBUFF_OUT -1 #If disabled, act as if no RAM is available   
 
-    jump noRam equal WMEM null      #If disabled, act as if no RAM is available       
-    op add reti @counter 2 #Otherwise, ask for variable allocation and receive back your ADDR  
-    jump doWMEMmalloc always 0 0
-    set reti 0
-    set test1 true
+        op add reti @counter 2 #Otherwise, ask for variable allocation and receive back your ADDR  
+        jump doWMEMmalloc always 0 0
+        set reti 0
 
-    op mul bitpack 1 100000                #Calculate new bitpacked flag, set it, and set ADDR for this cycle.
-    op add bitpack bitpack WMEMBUFF_OUT
-    set ADDR WMEMBUFF_OUT
-    ucontrol flag bitpack
+        op mul bitpack 1 100000                #Calculate new bitpacked flag, set it, and set ADDR for this cycle.
+        op add bitpack bitpack WMEMBUFF_OUT
+        set ADDR WMEMBUFF_OUT
+        ucontrol flag bitpack
 
-    set WMEM_ADDR ADDR      
-    set WMEMBUFF_IN @unit
-    op add reti @counter 2
-    set test2 true
-    jump doWMEMwrite always 0 0
-    set test3 true
-    set reti 0
+        set WMEM_ADDR ADDR      
+        set WMEMBUFF_IN @unit
+        op add reti @counter 2
+        jump doWMEMwrite always 0 0
+        set reti 0
 
     end
 
