@@ -1,7 +1,7 @@
 # Noxious Bog Gamemaster
 # Manages the gamestate, initializes waypoints, requests cutscenes and more.
 
-setrate 20
+setrate 200
 set WMEM processor1 # Link to ram
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
@@ -33,6 +33,7 @@ op mul pixTouchY pixTouchY 96
 sensor isShooting @clientUnit @shooting
 jump noTouchInput equal isShooting false
 
+    set noRepeatDifficulty 1
     jump notDifficultyInput greaterThan pixTouchY 70
     jump notDifficultyInput lessThan pixTouchY 40
 
@@ -46,33 +47,33 @@ jump noTouchInput equal isShooting false
         set gameDifficulty 0
         print "[#00ff00]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. Little extra enemy spawns. "
         message toast 2
-        set gamestate 2
         jump noTouchInput always 0 0
 
     mediumDifficultyChange:
         set gameDifficulty 1
         print "[#CCCC00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Standard extra enemy spawns."
         message toast 2
-        set gamestate 2
         jump noTouchInput always 0 0
 
     hardDifficultyChange:
         set gameDifficulty 2
         print "[#FF0000]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
         message toast 2
-        set gamestate 2
         jump noTouchInput always 0 0
 
     eradDifficultyChange:
         set gameDifficulty 3
         print "[#FF00FF]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and do not respect wave timer. Guardians are much tougher and have even more mechanics"
         message toast 2
-        set gamestate 2
         jump noTouchInput always 0 0
 
     notDifficultyInput:
 
 noTouchInput:
+
+jump activateTouch equal isShooting false
+    set noRepeatDifficulty 0
+activateTouch:
 
 op add reti @counter 2
 jump drawScreen equal gamestate 0

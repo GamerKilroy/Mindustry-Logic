@@ -1,7 +1,7 @@
 # Base Unit Module and Example
 
 setrate 500
-set TARGET_UNIT @flare
+set TARGET_UNIT @nova
 
 set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
@@ -43,13 +43,13 @@ init:
         op rand delay 1
         op div delay delay 100
         wait delay
-        sensor unitType @this @type                    #Lookup in Logic Units if this unit type is enabled.
-        set WMEM_ADDR 50
-        set WMEMBUFF_IN unitType
-        set WMEMBUFF_LEN 50
-        op add reti @counter 1
-        jump doWMEMlookup always 0 0
-        jump noRam equal WMEMBUFF_OUT -1 #If disabled, act as if no RAM is available   
+        #sensor unitType @this @type                    #Lookup in Logic Units if this unit type is enabled.
+        #set WMEM_ADDR 50
+        #set WMEMBUFF_IN unitType
+        #set WMEMBUFF_LEN 50
+        #op add reti @counter 1
+        #jump doWMEMlookup always 0 0
+        #jump noRam equal WMEMBUFF_OUT -1 #If disabled, act as if no RAM is available   
 
         op add reti @counter 2 #Otherwise, ask for variable allocation and receive back your ADDR  
         jump doWMEMmalloc always 0 0
