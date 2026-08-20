@@ -65,8 +65,8 @@ When a Leader (A unit that can create a squad) spawns and gets it's RAM allocati
 
 Every second, Soldiers (A unit that can join a squad) will check for available squads to join. If one is found, it will request that Squad type Manager for a request to join. If the join was successful, the unit will now work with the Leader's order instead of its default OBAI/KAI logic.
 
-### 2. The OpenBus - Async Atomic Memory Map
-The OpenBus system is the core of all OBAI units in the map. It's a completely asyncronous, atomic memory space that provides random memory access to any address in a fast and easily-synchonizable manner.
+### 2. The OpenBus - Async Memory Map
+The OpenBus system is the core of all OBAI units in the map. It's a completely asyncronous memory space that provides random memory access to any address in a fast and easily-synchonizable manner.
 It works on a base design by user 6f6626 & 1ue999 from the Mindustry Discord, modified to better suit my needs (multiple asyncronous access points and background processes)
 Due to the ability of wProcs to hold 6k arbitrary variables and Mindustry's innate ability to Lookup names from the block list, it is possible to create a processor that holds those 6000 variables and a way to reliably access and index those variables via the assistance of a ROM lookup.
 It works very similarly to real life RAM, except made out of completely different parts.
