@@ -11,8 +11,8 @@
     4. Garbage Collection
 3. The Unit Modules
 4. The Squad Modules
-    a. How a squad is made
-    b. What are the goals of squads
+    1. How a squad is made
+    2. What are the goals of squads
 5. The Gamemaster
 6. World Events
 7. General Unit Overview
@@ -159,7 +159,7 @@ The Squad Calculations are repeated for the units in squad, depending on the log
 
 Squad Disbanding never happens naturally: Once a unit is a part of the squad it remains part of it. The GC will eventually find all leaders as dead and mark the squad as inactive, prompting all units to return to base OBAI or KAI logic. 
 
-#### a. How a squad is made
+#### 4.1 How a squad is made
 Squads are composed of 3 main components:
 - The Leader
 - The Sergeants
@@ -174,7 +174,7 @@ Every other leader that tries to create the same type of squad (with some except
 
 Soldiers will look for available squads at RAM allocation and every second. This way, soldiers that are left without a valid squad will try to look for a new one to join.
 
-#### b. What are the goals of Squads
+#### 4.2 What are the goals of Squads
 Squads are a way to provide advanced unit cooperation without relying on manually deciding logic for each possible combination.
 Due to squads being dynamically created, they can also contain completely different units every single wave, leading to completely different logic.
 
