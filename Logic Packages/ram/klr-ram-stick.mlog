@@ -152,6 +152,7 @@ memlookup:
     write i ACKtarget "WMEMBUFF_OUT"
     #write 1 ACKtarget "ramACK"
     jump doReset always 0 0
+end
 
 memlookuptarget:
     set isBusy true

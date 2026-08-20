@@ -17,26 +17,6 @@ noCyclic:
     set fp1hz false
 endCyclic:
 
-jump noDifficultyChange equal gameDifficulty lastGameDifficulty
-    set lastGameDifficulty gameDifficulty
-
-    jump noEasySelectedNow notEqual gameDifficulty 0
-        print "[#00ff00]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. No extra enemy spawns. Reduced WorldEvent Intensity."
-    noEasySelectedNow:
-    jump noMediumSelectedNow notEqual gameDifficulty 1
-        print "[#CCCC00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Extra enemy spawns dependant on WorldEvents."
-    noMediumSelectedNow:
-    jump noHardSelectedNow notEqual gameDifficulty 2
-        print "[#FF0000]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
-    noHardSelectedNow:
-    jump noEradSelectedNow notEqual gameDifficulty 3
-        print "[#FF00FF]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and spawn more often. Guardians are much harder and have even more mechanics"
-    noEradSelectedNow:
-
-doneChangingDifficulty:
-noDifficultyChange:
-
-
 sensor touchXbase display1 @x #base display touch calculation
 sensor touchYbase display1 @y
 sensor mouseX @clientUnit @shootX
@@ -45,12 +25,49 @@ op sub touchXbase touchXbase 1
 op sub touchYbase touchYbase 1
 op sub touchX mouseX touchXbase
 op sub touchY mouseY touchYbase
-op div pixTouchX touchX 6
-op div pixTouchY touchY 6
-op sub pixTouchX pixTouchX 8
-op sub pixTouchY pixTouchY 8
-op mul pixTouchX pixTouchX 28
-op mul pixTouchY pixTouchY 28
+op div pixTouchX touchX 3
+op div pixTouchY touchY 3
+op mul pixTouchX pixTouchX 96
+op mul pixTouchY pixTouchY 96
+sensor isShooting @clientUnit @shooting
+jump noTouchInput equal isShooting false
+
+    jump notDifficultyInput greaterThan pixTouchY 70
+    jump notDifficultyInput lessThan pixTouchY 40
+
+    jump noTouchInput lessThan pixTouchX 0
+    jump easyDifficultyChange lessThan pixTouchX 20
+    jump mediumDifficultyChange lessThan pixTouchX 40
+    jump hardDifficultyChange lessThan pixTouchX 60
+    jump eradDifficultyChange lessThan pixTouchX 80
+
+    easyDifficultyChange:
+        set gameDifficulty 0
+        print "[#00ff00]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. Little extra enemy spawns. "
+        message toast 2
+        jump noTouchInput always 0 0
+
+    mediumDifficultyChange:
+        set gameDifficulty 1
+        print "[#CCCC00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Standard extra enemy spawns."
+        message toast 2
+        jump noTouchInput always 0 0
+
+    hardDifficultyChange:
+        set gameDifficulty 2
+        print "[#FF0000]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
+        message toast 2
+        jump noTouchInput always 0 0
+
+    eradDifficultyChange:
+        set gameDifficulty 3
+        print "[#FF00FF]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and do not respect wave timer. Guardians are much tougher and have even more mechanics"
+        message toast 2
+        jump noTouchInput always 0 0
+
+    notDifficultyInput:
+
+noTouchInput:
 
 op add reti @counter 2
 jump drawScreen equal gamestate 0
@@ -62,37 +79,42 @@ jump gameInit equal gamestate 0 #Write all INIT data to ROM
 op add reti @counter 1
 jump beforeGameStart equal gamestate 1 #Difficulty selection & Game Start
 
+op add reti @counter 1
+jump runningConfig equal gamestate 2 #Load difficulty data to RAM
+
+op add reti @counter 1
+jump gameStarted equal gamestate 3 #Gametime checks
+
 end
 
 gameInit:
 
     set gameDifficulty 1
 
-    set disableBuildingPointer 0
-    fetch playerCount totalPlayers @sharded 0 0
-
-    disableSingleBuilder:
-        fetch unit currUnit @sharded 0 disableBuildingPointer
-        setprop @buildSpeed currUnit -1
-        op add disableBuildingPointer 1
-        jump disableSingleBuilder lessThan disableBuildingPointer playerCount
-
     set retiMem reti
-    op add reti @counter 2
+    op add reti @counter 1
     jump resetPointers always 0 0
-    set reti 0
     set reti retiMem
 
     set gamestate 1
     set @counter reti
 
 beforeGameStart:
-    op mod secMod @second 2
+    op floor secMod @second
+    op mod secMod secMod 2
     jump mission1text equal secMod 0
     jump mission2text equal secMod 1
 
+    set disableBuildingPointer 0
+    fetch playerCount totalPlayers @sharded 0 0
+    disableSingleBuilder:
+        fetch unit currUnit @sharded 0 disableBuildingPointer
+        setprop @buildSpeed currUnit -1
+        op add disableBuildingPointer 1
+        jump disableSingleBuilder lessThan disableBuildingPointer playerCount
+
     mission1text:
-        print "Wave timer paused"
+        print "Wave timer inactive"
         message mission 1
         jump textDone always 0 0 
         
@@ -105,7 +127,8 @@ beforeGameStart:
     textDone:
     set @counter reti
 
-    
+runningConfig:
+    set @counter reti
 
 resetPointers:
     write baseUnitMemoryAddr cell1 1

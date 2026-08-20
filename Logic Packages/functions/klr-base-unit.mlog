@@ -38,7 +38,8 @@ end
 
 init:
  
-    op rand delay 1 1000
+    op rand delay 1
+    op div delay delay 100
     wait delay
     #sensor unitType @this @type                    #Lookup in Logic Units if this unit type is enabled.
     #set WMEM_ADDR 50
@@ -249,11 +250,11 @@ roaming:
 ##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
 doWMEMread: #WMEM Read - Read from RAM Address
     waitForReadyRead:
-    op rand delay 1
-    op div delay delay 10
-    wait delay
     read isBusy WMEM "isBusy"
     jump waitForReadyRead equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyRead equal isBusy true
+    write true WMEM "isBusy"
     write @this WMEM "ACKtarget"
     write WMEM_ADDR WMEM "addr"
     write WMEMBUFF_IN WMEM "inbuffer"
@@ -264,11 +265,11 @@ doWMEMread: #WMEM Read - Read from RAM Address
 
 doWMEMwrite: #WMEM Write - Write to RAM Address
     waitForReadyWrite:
-    op rand delay 1
-    op div delay delay 10
-    wait delay
     read isBusy WMEM "isBusy"
     jump waitForReadyWrite equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyWrite equal isBusy true
+    write true WMEM "isBusy"
     write @this WMEM "ACKtarget"
     write WMEM_ADDR WMEM "addr"
     write WMEMBUFF_IN WMEM "inbuffer"
@@ -279,11 +280,11 @@ doWMEMwrite: #WMEM Write - Write to RAM Address
 
 doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and len.
     waitForReadyLookup:
-    op rand delay 1
-    op div delay delay 10
-    wait delay
     read isBusy WMEM "isBusy"
     jump waitForReadyLookup equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyLookup equal isBusy true
+    write true WMEM "isBusy"
     write @this WMEM "ACKtarget"
     write WMEM_ADDR WMEM "addr"
     write WMEMBUFF_IN WMEM "inbuffer"
@@ -295,11 +296,11 @@ doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and le
 
 doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR back.
     waitForReadyMalloc:
-    op rand delay 1
-    op div delay delay 10
-    wait delay
     read isBusy WMEM "isBusy"
     jump waitForReadyMalloc equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyMalloc equal isBusy true
+    write true WMEM "isBusy"
     write @this WMEM "ACKtarget"
     write WMEM_ADDR WMEM "addr"
     write WMEMBUFF_IN WMEM "inbuffer"
