@@ -37,6 +37,9 @@ jump roaming equal FLAG 1
 end
 
 init:
+ 
+    op rand delay 1 1000
+    wait delay
     #sensor unitType @this @type                    #Lookup in Logic Units if this unit type is enabled.
     #set WMEM_ADDR 50
     #set REQTYPE 4
@@ -56,7 +59,7 @@ init:
     set ADDR WMEMBUFF_OUT
     ucontrol flag bitpack
 
-    set WMEM_ADDR ADDR
+    set WMEM_ADDR ADDR      
     set WMEMBUFF_IN @unit
     op add reti @counter 2
     set test2 true
@@ -246,6 +249,9 @@ roaming:
 ##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
 doWMEMread: #WMEM Read - Read from RAM Address
     waitForReadyRead:
+    op rand delay 1
+    op div delay delay 10
+    wait delay
     read isBusy WMEM "isBusy"
     jump waitForReadyRead equal isBusy true
     write @this WMEM "ACKtarget"
@@ -258,6 +264,9 @@ doWMEMread: #WMEM Read - Read from RAM Address
 
 doWMEMwrite: #WMEM Write - Write to RAM Address
     waitForReadyWrite:
+    op rand delay 1
+    op div delay delay 10
+    wait delay
     read isBusy WMEM "isBusy"
     jump waitForReadyWrite equal isBusy true
     write @this WMEM "ACKtarget"
@@ -270,6 +279,9 @@ doWMEMwrite: #WMEM Write - Write to RAM Address
 
 doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and len.
     waitForReadyLookup:
+    op rand delay 1
+    op div delay delay 10
+    wait delay
     read isBusy WMEM "isBusy"
     jump waitForReadyLookup equal isBusy true
     write @this WMEM "ACKtarget"
@@ -283,6 +295,9 @@ doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and le
 
 doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR back.
     waitForReadyMalloc:
+    op rand delay 1
+    op div delay delay 10
+    wait delay
     read isBusy WMEM "isBusy"
     jump waitForReadyMalloc equal isBusy true
     write @this WMEM "ACKtarget"

@@ -44,7 +44,7 @@ doInit:
     set ROMLOOKUP processor2
     set POINTERCELL cell1
     set unitMemoryPointer baseUnitMemoryAddr
-    op add maxUnitMemory unitMemoryPointer baseUnitMemoryAddr
+    op add maxUnitMemory baseUnitMemoryLen baseUnitMemoryAddr
     set squadMemoryPointer baseSquadMemoryAddr
     op add maxSquadMemory squadMemoryPointer baseSquadMemoryLen
 
@@ -189,6 +189,7 @@ memlookuptarget:
 end
 
 malloc:
+    set isBusy true
     jump unitMalloc equal reqLen 1
     jump squadMalloc equal reqLen 2
     jump doReset always 0 0 
