@@ -1,14 +1,14 @@
 ## KLR-AI-EXPANDED DESIGN DOCUMENT
 
 1. Goals and considerations
-    a. The Different Levels of AI
-    b. The Units
-    c. The Squads
+    1. The Different Levels of AI
+    2. The Units
+    3. The Squads
 2. The OpenBus - Async Atomic Memory Map
-    a. The RAMProcs & ROMProcs
-    b. The RAMACCESS Processor
-    c. Dynamic Memory Allocation
-    d. Garbage Collection
+    1. The RAMProcs & ROMProcs
+    2. The RAMACCESS Processor
+    3. Dynamic Memory Allocation
+    4. Garbage Collection
 3. The Unit Modules
 4. The Squad Modules
     a. How a squad is made
@@ -29,7 +29,7 @@ This is where the KLR-OpenBus system comes in. By using wProcessor's capability 
 
 We now have an easy way to store any amount of data we wish, we no type limitation. Sure, this includes an execution time penalty due to the extra operations needed to write/read to memory, but due to multiple processors being able to read/write at the same time, the problem can be solved with intelligent design.
 
-#### a. The Different Levels of AI
+#### 1.1 The Different Levels of AI
 When originally creating the system, it relied on an advanced targetting and pathfinding logic relying on local ulocate and uradar commands. While it works great for simpler units, more advanced groups require more attention. This is where the AI has been subdiveded in 3 categories:
 - The Vanilla AI (VAI)
 - The klr-pathfind AI (KAI)
@@ -44,7 +44,7 @@ The OpenBus AI, OBAI for short, is the max level of intelligence a Unit can ask 
 By using the RAM space the unit now has available it is able to calculate complex waypoints, remember units and formation, track enemy turret positions and the state of it's own logic.
 Most of the OBAIs are designed to work in tandem via the Squad System. More on that below.
 
-#### b. The Units
+#### 1.2 The Units
 While some of the units will be vanilla, most are not. Units are added via the Content Pack / Data Pack system, by remixing Vanilla content into personalized enemies and bosses for KLR maps.
 The DP system also allows for duplication of unit data, so we can have identical units subscribing to wholly different AIs.
 
@@ -54,7 +54,7 @@ If instead the Unit sees it's enabled for advanced logic in the OpenBus, it will
 
 After the unit has been mapped properly (and it has run all of the necessary setups) it will proceed to either create/check for a Squad, or start working alone with even more advanced pathfinding and target selection than the default klr-pathfinding logic.
 
-#### c. The Squads
+#### 1.3 The Squads
 Unit Coordination works on a Squad System. Some units can create squads, while other can join squads.
 
 Squads have types, which are ways to group what the goal of the squad is. Example Squad are Meatshield Squads (Smallers units being cannon fodder for more important units) - Pathfinding Squads (Using a unit's advanced pathfinding to allow other units to follow) - Active Cover squads (A unit asks for interceptor/anti-unit cover)
@@ -72,7 +72,7 @@ Due to the ability of wProcs to hold 6k arbitrary variables and Mindustry's inna
 It works very similarly to real life RAM, except made out of completely different parts.
 The OpenBus system is designed to work with up to 261 Memory wProcessors, maxing out at around 1.5 million available variables in the memory space. However, this is more often than not overkill - 18k variables have proven plenty for all uses.
 
-#### a. The RAMProcs & ROMProcs
+#### 2.1 The RAMProcs & ROMProcs
 
 The core of the system are 2 types of World Processors: The RAM processors and the ROM processors.
 
@@ -88,7 +88,7 @@ Get the Modulo of the location by 261, and you'll find the ID number of the bloc
 
 By reading the obtained variable name from the calculated RAMprocessor number, you will obtain exactly the value you wish.
 
-#### b. The RAMACCESS Processor.
+#### 2.2 The RAMACCESS Processor.
 Writing and reading to memory directly is slow and code-heavy, and as such it won't be a good idea to fit all of the necessary functions directly on a Unit.
 As such, the RAMACCESS processor was born. The RAMACCESS processor has utility function for reading, writing, lookup, clear, malloc and many more. It has a Busy flag to avoid requests overlapping each other.
 The RAMACCESS processors in the main way all other modules access the memory banks. A single RAMACCESS can manage a few modules, but particularly heavy processors may have a dedicated RAMACCESS processor to cooperate with RAM better.
@@ -103,7 +103,7 @@ The data is then repeated for the "SquadReady" and "SquadPointer" fields, but fo
 
 Data further down is used for Squad lookups, which is much faster than ram. More details regarding that in the "4. The Squad Modules" section.
 
-#### c. Dynamic Memory Allocation
+#### 2.3 Dynamic Memory Allocation
 Units and Squads have the ability to ask for Memory Allocation. By requesting their RAMACCESS processor for a malloc, they will receive back the base address of their own memory space.
 
 Said memory space is provided by having a predefined size and start position in memory space. When a unit asks for memory allocation, the wProc will check for MEMPOINTER readyness and, if ready, start using it. It will immediately set the ready flag to false, read the unit pointer, write it back updated and then free to MEMPOINTER cell. Only after this is done it will proceed with proper memory allocation for the unit/squad.
@@ -112,7 +112,7 @@ The memory space is predefined at 16 vars for Units and 128 vars for Squads. In 
 Between each wave, the MEMPOINTER is reset to it's default values, allowing the table to be filled from the start again.
 At default configuration, the OPENBUS can manage up to 128 OBAI units and up to 32 OBAI squads.
 
-#### d. Garbage Collection
+#### 2.4 Garbage Collection
 Due to the asyncronous nature of unit command, it is highly likely that some OBAI units may die without their wProc being notified (for instance, currently bound to a different unit). As such, the memory space will get dirty with stale references to units or squads.
 
 Due to units needing to lookup both the Unit Dynamic Space and the Squad Dynamic Space, a system of garbage collectors is needed. There are 2 garbage collectors of OBAI units - One for Units and one for Squads.
