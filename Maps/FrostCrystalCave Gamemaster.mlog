@@ -31,9 +31,17 @@ op div pixTouchY touchY 3
 op mul pixTouchX pixTouchX 96
 op mul pixTouchY pixTouchY 96
 sensor isShooting @clientUnit @shooting
-jump noTouchInput equal isShooting false
 
-    set noRepeatDifficulty 1
+jump noShootFront equal isShooting lastShooting
+    jump noShootFront equal isShooting false
+        set FPshoot true
+        jump endShootFront always 0 0
+noShootFront:
+    set FPshoot false
+endShootFront:
+
+jump noTouchInput equal FPshoot false
+
     jump notDifficultyInput greaterThan pixTouchY 70
     jump notDifficultyInput lessThan pixTouchY 40
 
@@ -42,6 +50,8 @@ jump noTouchInput equal isShooting false
     jump mediumDifficultyChange lessThan pixTouchX 40
     jump hardDifficultyChange lessThan pixTouchX 60
     jump eradDifficultyChange lessThan pixTouchX 80
+
+    op add test test 1
 
     easyDifficultyChange:
         set gameDifficulty 0
@@ -70,10 +80,6 @@ jump noTouchInput equal isShooting false
     notDifficultyInput:
 
 noTouchInput:
-
-jump activateTouch equal isShooting false
-    set noRepeatDifficulty 0
-activateTouch:
 
 op add reti @counter 2
 jump drawScreen equal gamestate 0
