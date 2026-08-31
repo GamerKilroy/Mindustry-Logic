@@ -209,7 +209,7 @@ malloc:
         write 0 POINTERCELL 0
 
         write unitMemoryPointer ACKtarget "WMEMBUFF_OUT"
-        write 1 ACKtarget "ramACK"
+        # write 1 ACKtarget "ramACK"
         jump doReset always 0 0
 
     squadMalloc:
