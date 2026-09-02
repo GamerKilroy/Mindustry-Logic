@@ -94,7 +94,7 @@ op add reti @counter 1
 jump beforeGameStart equal gamestate 1 #Difficulty selection & Game Start
 
 op add reti @counter 1
-jump runningConfig equal gamestate 2 #Load difficulty data to RAM
+jump runningConfig equal gamestate 1 #Load difficulty data to RAM
 
 op add reti @counter 1
 jump gameStarted equal gamestate 3 #Gametime checks
@@ -144,14 +144,14 @@ beforeGameStart:
 runningConfig:
 
     set WMEM_ADDR 70
-    set WMEMBUFF_IN @dp-klr-sceptre-cr
+    set WMEMBUFF_IN @nova
     set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0
     set reti retiMem
 
     set WMEM_ADDR 71
-    set WMEMBUFF_IN @dp-klr-vela-jmp
+    set WMEMBUFF_IN @flare
     set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0

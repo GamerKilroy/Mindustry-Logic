@@ -175,10 +175,10 @@ memlookuptarget:
         read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
         read currLookup RAMref actualvarname
         jump lookupDone equal currLookup inbuffer
-        op add i 1
+        op add i i 1
         jump continueLookupTarget lessThan i maxLookup
         set i -1
-        jump lookupTargetDone equal currLookup inbuffer
+        jump lookupTargetDone always 0 0
     end
 
     lookupTargetDone:

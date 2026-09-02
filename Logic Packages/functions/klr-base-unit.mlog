@@ -29,12 +29,14 @@ jump hasUnit notEqual @unit null
 end
 hasUnit:
 
-sensor bitpack @unit @flag
+sensor bitpackR @unit @flag
 
-op idiv SQUADADDR bitpack 1000000
-op mod ADDR bitpack 1000000
-op idiv ADDR ADDR 10
-op mod FLAG bitpack 10
+op idiv SQUADADDR bitpackR 1000000
+
+op idiv ADDR bitpackR 10
+op mod ADDR ADDR 1000000
+ 
+op mod FLAG bitpackR 10
 
 op greaterThan hasRAM ADDR 0
 
@@ -50,7 +52,7 @@ init:
         op rand delay 1
         op div delay delay 100
         wait delay
-        sensor unitType @this @type                    #Lookup in Logic Units if this unit type is enabled.
+        sensor unitType @unit @type                    #Lookup in Logic Units if this unit type is enabled.
         set WMEM_ADDR 50
         set WMEMBUFF_IN unitType
         set WMEMBUFF_LEN 50
@@ -65,7 +67,7 @@ init:
 
         set ADDR WMEMBUFF_OUT
 
-        op mul bitpack ADDR 1000000                #Calculate new bitpacked flag, set it, and set ADDR for this cycle.
+        op mul bitpack ADDR 10                 #Calculate new bitpacked flag, set it, and set ADDR for this cycle.
         op add bitpack bitpack 1
         
         ucontrol flag bitpack
@@ -79,7 +81,8 @@ init:
     end
 
 noRam:
-    ucontrol flag 1 #In absence of RAM, we only use FLAG. 
+    #ucontrol flag 1 #In absence of RAM, we only use FLAG. 
+    set SALATEINTENSE 1
 
 roaming:
     jump roamingDefault equal hasRAM false
@@ -255,16 +258,16 @@ roaming:
         jump hasSquad greaterThan SQUADADDR 0
 
             op add reti @counter 2
-            jump searchSquads always 0 0
+            jump doSquadSearch always 0 0
             set reti 0
 
             set squadToJoin 1
 
             jump noValidSquads equal VALID_SQUADS 0
             jump onlyOneValid equal VALID_SQUADS 1
-                op scale div 1 VALID_SQUADS
+                op div scale  1 VALID_SQUADS
                 op rand RNGroll 1
-                op div RNGroll scale
+                op div RNGroll scale 
                 op floor RNGroll RNGroll 0
 
                 set squadToJoin RNGroll
@@ -278,7 +281,7 @@ roaming:
             end
 
             noValidSquads:
-            jump cannotLead lessThan SQUADID_CAN_LEAD 0
+            jump cannotLead lessThan SQUADID_CAN_LEAD 1
 
             op add reti @counter 2
             jump doCreateSquad always 0 0
@@ -292,7 +295,7 @@ roaming:
 
         set WMEM_ADDR SQUADADDR
         op add reti @counter 2
-        jump always doWMEMread 0 0
+        jump doWMEMread always  0 0
         set reti 0
 
         sensor isLeaderDead WMEMBUFF_OUT @dead 
@@ -374,13 +377,13 @@ doSquadSearch: #SquadSearch function. Will look for squads with a Valid ID to jo
     continueSquadSearch:
         read squadNumber SQUADLOOKUP i
 
-        jump noSquadHere equal squadNumber 0
+        jump noSquadHereSearch equal squadNumber 0
         
-            op accepts shr SQUADID_CAN_JOIN i
-            op accepts and accepts 0x01
+            op shr accepts  SQUADID_CAN_JOIN i
+            op and accepts  accepts 0x01
 
-            jump SquadNotAccepted equal accepts false
-                op thisSquadMemoryAddr add i 1
+            jump SquadNotAcceptedSearch equal accepts false
+                op add thisSquadMemoryAddr  i 1
                 read squadLookupMemoryAddr SQUADLOOKUP thisSquadMemoryAddr
 
                 set WMEM_ADDR squadLookupMemoryAddr
@@ -397,13 +400,13 @@ doSquadSearch: #SquadSearch function. Will look for squads with a Valid ID to jo
 
                 op add VALID_SQUADS VALID_SQUADS 1
 
-            SquadNotAccepted:
+            SquadNotAcceptedSearch:
             tooFarFromLeader:
 
 
 
-        noSquadHere:
-        op i add i 2
+        noSquadHereSearch:
+        op add i  i 2
     jump continueSquadSearch lessThan i 32
     set @counter reti
     
@@ -411,26 +414,23 @@ doSquadSearch: #SquadSearch function. Will look for squads with a Valid ID to jo
 doJoinSquad:
     set i 0
     set squadCounter 0
-    continueSquadSearch:
+    continueSquadJoin:
         read squadNumber SQUADLOOKUP i
 
-        jump noSquadHere equal squadNumber 0
+        jump noSquadHereJoin equal squadNumber 0
         
             op shr accepts SQUADID_CAN_JOIN i
             op and accepts accepts 0x01
 
-            jump SquadNotAccepted equal accepts false
+            jump SquadNotAcceptedJoin equal accepts false
                 jump reachedJoinable equal squadCounter squadToJoin
                 op add squadCounter squadCounter 1
 
-            SquadNotAccepted:
-            tooFarFromLeader:
+            SquadNotAcceptedJoin:
 
-
-
-        noSquadHere:
+        noSquadHereJoin:
         op add i i 2
-    jump continueSquadSearch lessThan i 32
+    jump continueSquadJoin lessThan i 32
 
     set @counter reti
 
