@@ -32,7 +32,7 @@
 +28     INT         logic3 Command 1
 +29     INT         logic3 Command 2
 +30     INT         logic4 Command 1
-+31     INT         logic4 Command 2
++31     INT         logic4 Command 2 
 -----
 +32     INT         logic1 Waypoint X 1
 +33     INT         logic1 Waypoint Y 1

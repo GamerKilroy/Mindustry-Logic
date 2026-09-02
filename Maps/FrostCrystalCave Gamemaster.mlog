@@ -30,6 +30,7 @@ op div pixTouchX touchX 3
 op div pixTouchY touchY 3
 op mul pixTouchX pixTouchX 96
 op mul pixTouchY pixTouchY 96
+
 sensor isShooting @clientUnit @shooting
 
 jump noShootFront equal isShooting lastShooting
@@ -39,6 +40,7 @@ jump noShootFront equal isShooting lastShooting
 noShootFront:
     set FPshoot false
 endShootFront:
+    set lastShooting isShooting
 
 jump noTouchInput equal FPshoot false
 
