@@ -25,16 +25,16 @@ set PDSThreshold 500    # If the Target Enemy Unit has more Max HP than this thr
 
 ubind TARGET_UNIT ## Binds to the unit handle.
 
-jump hasUnit notEqual @unit null
+jump hasUnit notEqual @unit null #If there is no unit to control, just end.
 end
 hasUnit:
 
-sensor bitpackR @unit @flag
+sensor bitpackR @unit @flag    # Read flag from currently bound unit and unpack it.
 
-op idiv SQUADADDR bitpackR 1000000
+op idiv SQUADADDR bitpackR 10000000
 
 op idiv ADDR bitpackR 10
-op mod ADDR ADDR 1000000
+op mod ADDR ADDR 10000000
  
 op mod FLAG bitpackR 10
 
@@ -81,146 +81,16 @@ init:
     end
 
 noRam:
-    #ucontrol flag 1 #In absence of RAM, we only use FLAG. 
-    set SALATEINTENSE 1
+    ucontrol flag 1 #In absence of RAM, we only use FLAG. 
 
 roaming:
     jump roamingDefault equal hasRAM false
-    jump roamingRAM equal hasRAM true
+    jump searchSquadOBAI equal hasRAM true
     end
 
-    roamingDefault:
-        ulocate building core true @copper coreX coreY isCore b_core #Locate the enemy core
-        ulocate building turret true @copper turretX turretY isTurret b_turret #find the closest enemy turret
-        ulocate building generator true @copper genX genY isGenerator b_generator #find the closest enemy generator
-        ulocate building factory true @copper factX factY isFactory b_factory #find the closest enemy factory
-        ulocate building reactor true @copper reactX reactY isReactor b_reactor #find the closest enemy reactor
-        uradar enemy any any distance 0 1 enemyUnit #See if there are enemy units
-
-
-        ##### CALCULATIONS
-        set maxWeight 0     # Reset the values for this cycle
-        set isPDSMode false
-
-        sensor hereX @unit @x    # Find the current unit position
-        sensor hereY @unit @y
-
-        jump noCore equal coreWeight 0
-        jump noCore equal isCore false
-        op sub aX coreX hereX     # Calculate weighted distance to Core
-        op pow aXsq aX 2
-        op sub bY hereY coreY
-        op pow bYsq bY 2
-        op add c2 aXsq bYsq
-        op sqrt coreDist c2 c2
-        op div coreDist 1 coreDist 
-        op mul coreScaled coreDist coreWeight
-        jump coreNotHighest lessThan coreScaled maxWeight
-        set currTarget b_core
-        set targetX coreX
-        set targetY coreY
-        set maxWeight coreScaled
-        noCore:
-        set coreScaled 0
-        coreNotHighest:
-
-        jump noTurret equal turretWeight 0
-        jump noTurret equal isTurret false
-        op sub aX turretX hereX     # Calculate weighted distance to Turret
-        op pow aXsq aX 2
-        op sub bY hereY turretY
-        op pow bYsq bY 2
-        op add c2 aXsq bYsq
-        op sqrt turretDist c2 c2
-        op div turretDist 1 turretDist 
-        op mul turretScaled turretDist turretWeight
-        jump turretNotHighest lessThan turretScaled maxWeight
-        set currTarget b_turret
-        set targetX turretX
-        set targetY turretY
-        set maxWeight turretScaled
-        noTurret:
-        set turretScaled 0
-        turretNotHighest:
-
-        jump noGen equal genWeight 0
-        jump noGen equal isGenerator false
-        op sub aX genX hereX      # Calculate weighted distance to Generator
-        op pow aXsq aX 2
-        op sub bY hereY genY
-        op pow bYsq bY 2
-        op add c2 aXsq bYsq
-        op sqrt genDist c2 c2
-        op div genDist 1 genDist 
-        op mul genScaled genDist genWeight
-        jump genNotHighest lessThan genScaled maxWeight
-        set currTarget b_generator
-        set targetX genX
-        set targetY genY
-        set maxWeight genScaled
-        noGen:
-        set genScaled 0
-        genNotHighest:
-        
-        jump noFact equal factWeight 0
-        jump noFact equal isFactory false
-        op sub aX factX hereX       # Calculate weighted distance to Factory
-        op pow aXsq aX 2
-        op sub bY hereY factY
-        op pow bYsq bY 2
-        op add c2 aXsq bYsq
-        op sqrt factDist c2 c2
-        op div factDist 1 factDist 
-        op mul factScaled factDist factWeight
-        jump factNotHighest lessThan factScaled maxWeight
-        set currTarget b_factory
-        set targetX factX
-        set targetY factY
-        set maxWeight factScaled
-        noFact:
-        set factScaled 0
-        factNotHighest:
-
-        jump noReact equal reactWeight 0
-        jump noReact equal isReactor false
-        op sub aX reactX hereX       # Calculate weighted distance to Reactor
-        op pow aXsq aX 2
-        op sub bY hereY reactY
-        op pow bYsq bY 2
-        op add c2 aXsq bYsq
-        op sqrt reactDist c2 c2
-        op div reactDist 1 reactDist 
-        op mul reactScaled reactDist reactWeight
-        jump reactNotHighest lessThan reactScaled maxWeight
-        set currTarget b_reactor
-        set targetX reactX
-        set targetY reactY
-        set maxWeight reactScaled
-        noReact:
-        set reactScaled 0
-        reactNotHighest:
-
-        jump noUnit equal enemyUnit null
-        op sub aX unitX hereX        # Calculate weighted distance to enemy units
-        op pow aXsq aX 2
-        op sub bY hereY unitY
-        op pow bYsq bY 2
-        op add c2 aXsq bYsq
-        op sqrt unitDist c2 c2
-        op div unitDist 1 unitDist 
-        op mul unitScaled unitDist unitWeight
-        jump unitNotHighest lessThan unitScaled maxWeight
-        set currTarget enemyUnit
-        set targetX unitX
-        set targetY unitY
-        set maxWeight unitScaled
-        sensor unitMaxHP enemyUnit @maxHealth  # If the enemy unit has less HP than the PDS threshold, it will use PDS ranges - This way it won't fire slow main weapons at a faraway flare.
-        jump bigEnough greaterThan unitMaxHP PDSThreshold
-        set isPDSMode true 
-        noUnit:
-        set unitScaled 0
-        bigEnough:
-        unitNotHighest:
+        op add reti @counter 2    # Call target finding function
+        jump targetFind always 0 0
+        set reti 0
 
         ##### uControl and shooting manager
         jump hasCommand greaterThan maxWeight 0    # If somehow there is no target (core is not on the map?) just stop...? Usually a configuration mistake (coreWeight = 0?)
@@ -253,19 +123,19 @@ roaming:
         ucontrol approach 0 0 0
         end
 
-    roamingRAM:     #700 lines left available for custom logic!
+    searchSquadOBAI: #If you're an OBAI unit, look for a squad to join. There should usually be one unless all leaders are dead.
 
-        jump hasSquad greaterThan SQUADADDR 0
+        jump followSquad greaterThan SQUADADDR 0    # If you have a squad already, do not roam.
 
-            op add reti @counter 2
+            op add reti @counter 2                  # Search for valid squads
             jump doSquadSearch always 0 0
             set reti 0
 
             set squadToJoin 1
 
-            jump noValidSquads equal VALID_SQUADS 0
-            jump onlyOneValid equal VALID_SQUADS 1
-                op div scale  1 VALID_SQUADS
+            jump noValidSquads equal VALID_SQUADS 0 # If there are 0 squads, try to create one
+            jump onlyOneValid equal VALID_SQUADS 1 # If there is only one, then join that
+                op div scale  1 VALID_SQUADS       # Otherwise roll for which one to join
                 op rand RNGroll 1
                 op div RNGroll scale 
                 op floor RNGroll RNGroll 0
@@ -274,36 +144,50 @@ roaming:
 
             onlyOneValid:
 
-            op add reti @counter 2
+            op add reti @counter 2                  # Request to join the correct Squad
             jump doJoinSquad always 0 0
             set reti 1
 
             end
 
-            noValidSquads:
-            jump cannotLead lessThan SQUADID_CAN_LEAD 1
+            noValidSquads:                          # If there are no valid squads, check if this unit can lead.
+            jump cannotLead lessThan SQUADID_CAN_LEAD 1 #If no, just do RoamingOBAI
 
-            op add reti @counter 2
+            op add reti @counter 2                # Otherwise, call the squad creation function
             jump doCreateSquad always 0 0
             set reti 1
 
             cannotLead:
+
+            jump roamingOBAI always 0 0    ## If there is no squad and cannot create one, then just do RoamingOBAI logic.
             end
 
 
-        hasSquad:
+        followSquad:
 
-        set WMEM_ADDR SQUADADDR
-        op add reti @counter 2
-        jump doWMEMread always  0 0
-        set reti 0
+            op add isLeaderAddr ADDR 2   # If you're the leader, then lead - Don't follow!
+            set WMEM_ADDR isLeaderAddr
+            op add reti @counter 2
+            jump doWMEMread always 0 0
+            set reti 0
+            jump leadSquad equal WMEMBUFF_IN true 
 
-        sensor isLeaderDead WMEMBUFF_OUT @dead 
+            set WMEM_ADDR SQUADADDR      ## Check leader sanity. On leader death, leave the squad and look for a new one.
+            op add reti @counter 2
+            jump doWMEMread always  0 0
+            set reti 0
+            sensor isLeaderDead WMEMBUFF_OUT @dead 
 
-
-
-        ucontrol approach 0 0 0
+            ucontrol approach 0 0 0
         end
+
+    roamingOBAI: #If you're not part of a squad, still try to use your RAM to your best potential.
+        set 0 0
+    end 
+
+    leadSquad:
+        set 0 0
+    end
 
 
 ##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
@@ -320,7 +204,7 @@ doWMEMread: #WMEM Read - Read from RAM Address
     write 1 WMEM "req"
     waitACKRead: ; jump waitACKRead equal ramACK 0
     set ramACK 0
-    set @counter reti
+set @counter reti
 
 doWMEMwrite: #WMEM Write - Write to RAM Address
     waitForReadyWrite:
@@ -335,7 +219,7 @@ doWMEMwrite: #WMEM Write - Write to RAM Address
     write 2 WMEM "req"
     waitACKWrite: ; jump waitACKWrite equal ramACK 0
     set ramACK 0
-    set @counter reti
+set @counter reti
 
 doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and len.
     waitForReadyLookup:
@@ -351,7 +235,7 @@ doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and le
     write 4 WMEM "req"
     waitACKLookup: ; jump waitACKLookup equal ramACK 0
     set ramACK 0
-    set @counter reti
+set @counter reti
 
 doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR back.
 
@@ -368,53 +252,49 @@ doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR b
     write 10 WMEM "req"
     waitACKMalloc: ; jump waitACKMalloc equal ramACK 0
     set ramACK 0
-    set @counter reti
-
+set @counter reti
 
 doSquadSearch: #SquadSearch function. Will look for squads with a Valid ID to join.
     set i 0
     set VALID_SQUADS 0
     continueSquadSearch:
-        read squadNumber SQUADLOOKUP i
+        read squadNumber SQUADLOOKUP i  #Read from Squad Cell each even data slot
 
-        jump noSquadHereSearch equal squadNumber 0
+        jump noSquadHereSearch equal squadNumber 0 #There is no squad in the slow, jump to next
         
-            op shr accepts  SQUADID_CAN_JOIN i
+            op shr accepts  SQUADID_CAN_JOIN i    #Check if you can join this squad type
             op and accepts  accepts 0x01
 
-            jump SquadNotAcceptedSearch equal accepts false
-                op add thisSquadMemoryAddr  i 1
+            jump SquadNotAcceptedSearch equal accepts false #If you cannot, jump to next
+                op add thisSquadMemoryAddr  i 1     #Otherwise, read the Leader from RAM
                 read squadLookupMemoryAddr SQUADLOOKUP thisSquadMemoryAddr
 
-                set WMEM_ADDR squadLookupMemoryAddr
+                set WMEM_ADDR squadLookupMemoryAddr # #Lookup the Leader in RAM
                 set reti2 reti
                 op add reti @counter 2
                 jump doWMEMread always 0 0
                 set reti2 0
                 set reti reti2
 
-                set u_leader WMEMBUFF_OUT
+                set u_leader WMEMBUFF_OUT # Find the leader position and range
                 sensor leaderX u_leader @x 
                 sensor leaderY u_leader @y
-                ucontrol within leaderX leaderY 20 closeToLeader
+                sensor leaderRange u_leader @range
+                ucontrol within leaderX leaderY leaderRange closeToLeader
 
-                op add VALID_SQUADS VALID_SQUADS 1
+                op add VALID_SQUADS VALID_SQUADS 1 #If it's a valid squad, add it to the counter
 
             SquadNotAcceptedSearch:
             tooFarFromLeader:
-
-
-
         noSquadHereSearch:
         op add i  i 2
-    jump continueSquadSearch lessThan i 32
-    set @counter reti
+    jump continueSquadSearch lessThan i 64 #Loop through all 32 squads.
+set @counter reti
     
-
-doJoinSquad:
+doJoinSquad: #SquadJoin function. Will join the selected # squad.
     set i 0
     set squadCounter 0
-    continueSquadJoin:
+    continueSquadJoin: #Iterate through squads as for squadSearch
         read squadNumber SQUADLOOKUP i
 
         jump noSquadHereJoin equal squadNumber 0
@@ -422,7 +302,7 @@ doJoinSquad:
             op shr accepts SQUADID_CAN_JOIN i
             op and accepts accepts 0x01
 
-            jump SquadNotAcceptedJoin equal accepts false
+            jump SquadNotAcceptedJoin equal accepts false   #Keep count of the valid squads, when it maches, request to join
                 jump reachedJoinable equal squadCounter squadToJoin
                 op add squadCounter squadCounter 1
 
@@ -434,7 +314,7 @@ doJoinSquad:
 
     set @counter reti
 
-    reachedJoinable:
+    reachedJoinable: #Once you have reached the correct squad number, join it
         op add squadAddrLocation i 1
         read squadAddrLocation SQUADLOOKUP squadAddrLocation
 
@@ -442,33 +322,204 @@ doJoinSquad:
         set WMEM_ADDR lUnitSquadAddrSaved
         set WMEMBUFF_IN squadAddrLocation
 
-        set reti2 reti
+        set reti2 reti   #And save it's location in RAM in your unit memory space
         op add reti2 @counter 2
         jump doWMEMwrite 
         set reti2 0
         set reti reti2
 
-        set SQUADADDR squadAddrLocation
-        set @counter reti
+        set SQUADADDR squadAddrLocation   # And in the Unit's flag.
+        sensor originalBitpack @unit @flag
+        op mul toAdd SQUADADDR 10000000
+        op add newBitpack toAdd originalBitpack
+        ucontrol flag newBitpack
 
-doCreateSquad:
+set @counter reti
 
-    set WMEMBUFF_LEN 2
+doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad creation.
 
+    set WMEMBUFF_LEN 2 #Request a Squad Malloc
     set reti2 reti
     op add reti2 @counter 2
-    jump doWMEMmalloc
+    jump doWMEMmalloc 0 0
     set reti2 0
     set reti reti2
 
-    op idiv cellSpace WMEMBUFF_OUT 256
+    set SQUADADDR WMEMBUFF_OUT #set your own squad address
+
+    op idiv cellSpace SQUADADDR 256 #Calculate the correct cell space based on assigned memory location
     op sub cellSpace cellSpace baseSquadMemoryAddr
 
-    write SQUADID_CAN_LEAD SQUADLOOKUP cellSpace
+    set WMEMBUFF_IN @unit   #Write your own reference in RAM as a Leader
+    set WMEM_ADDR SQUADADDR
+    op add reti2 @counter 2
+    jump doWMEMwrite always 0 0
+    set reti2 0
+    set reti reti2
+
+    op add personalSquadAddr ADDR 1  #Write it in your own memory as well
+    set WMEM_ADDR personalSquadAddr
+    set WMEMBUFF_IN SQUADADDR
+    op add reti2 @counter 2
+    jump doWMEMwrite always 0 0
+    set reti2 0
+    set reti reti2
+
+    op add personalIsLeader ADDR 2  #As well as saving that you're the leader!
+    set WMEM_ADDR persoanlIsLeader
+    set WMEMBUFF_IN SQUADADDR
+    op add reti2 @counter 2
+    jump doWMEMwrite always 0 0
+    set reti2 0
+    set reti reti2
+
+    set reti2 reti   #And save it's location in RAM in your unit memory space
+    op add reti2 @counter 2
+    jump doWMEMwrite 
+    set reti2 0
+    set reti reti2
+
+    write SQUADID_CAN_LEAD SQUADLOOKUP cellSpace # Publish the Advert in the Squad Memory Cell
     op add cellSpace cellSpace 1
     write WMEMBUFF_OUT SQUADLOOKUP cellSpace
 
-    set SQUADADDR WMEMBUFF_OUT
+    sensor originalBitpack @unit @flag #Update your own flag
+    op mul toAdd SQUADADDR 10000000
+    op add newBitpack toAdd originalBitpack
+    ucontrol flag newBitpack    
     
-    set @counter reti
+set @counter reti
     
+targetFind: #OLD RoamingDefault is not a targetFinding function. Will look for valid targets based on weighted distance.
+    ulocate building core true @copper coreX coreY isCore b_core #Locate the enemy core
+    ulocate building turret true @copper turretX turretY isTurret b_turret #find the closest enemy turret
+    ulocate building generator true @copper genX genY isGenerator b_generator #find the closest enemy generator
+    ulocate building factory true @copper factX factY isFactory b_factory #find the closest enemy factory
+    ulocate building reactor true @copper reactX reactY isReactor b_reactor #find the closest enemy reactor
+    uradar enemy any any distance 0 1 enemyUnit #See if there are enemy units
+
+
+    ##### CALCULATIONS
+    set maxWeight 0     # Reset the values for this cycle
+    set isPDSMode false
+
+    sensor hereX @unit @x    # Find the current unit position
+    sensor hereY @unit @y
+
+    jump noCore equal coreWeight 0
+    jump noCore equal isCore false
+    op sub aX coreX hereX     # Calculate weighted distance to Core
+    op pow aXsq aX 2
+    op sub bY hereY coreY
+    op pow bYsq bY 2
+    op add c2 aXsq bYsq
+    op sqrt coreDist c2 c2
+    op div coreDist 1 coreDist 
+    op mul coreScaled coreDist coreWeight
+    jump coreNotHighest lessThan coreScaled maxWeight
+    set currTarget b_core
+    set targetX coreX
+    set targetY coreY
+    set maxWeight coreScaled
+    noCore:
+    set coreScaled 0
+    coreNotHighest:
+
+    jump noTurret equal turretWeight 0
+    jump noTurret equal isTurret false
+    op sub aX turretX hereX     # Calculate weighted distance to Turret
+    op pow aXsq aX 2
+    op sub bY hereY turretY
+    op pow bYsq bY 2
+    op add c2 aXsq bYsq
+    op sqrt turretDist c2 c2
+    op div turretDist 1 turretDist 
+    op mul turretScaled turretDist turretWeight
+    jump turretNotHighest lessThan turretScaled maxWeight
+    set currTarget b_turret
+    set targetX turretX
+    set targetY turretY
+    set maxWeight turretScaled
+    noTurret:
+    set turretScaled 0
+    turretNotHighest:
+
+    jump noGen equal genWeight 0
+    jump noGen equal isGenerator false
+    op sub aX genX hereX      # Calculate weighted distance to Generator
+    op pow aXsq aX 2
+    op sub bY hereY genY
+    op pow bYsq bY 2
+    op add c2 aXsq bYsq
+    op sqrt genDist c2 c2
+    op div genDist 1 genDist 
+    op mul genScaled genDist genWeight
+    jump genNotHighest lessThan genScaled maxWeight
+    set currTarget b_generator
+    set targetX genX
+    set targetY genY
+    set maxWeight genScaled
+    noGen:
+    set genScaled 0
+    genNotHighest:
+    
+    jump noFact equal factWeight 0
+    jump noFact equal isFactory false
+    op sub aX factX hereX       # Calculate weighted distance to Factory
+    op pow aXsq aX 2
+    op sub bY hereY factY
+    op pow bYsq bY 2
+    op add c2 aXsq bYsq
+    op sqrt factDist c2 c2
+    op div factDist 1 factDist 
+    op mul factScaled factDist factWeight
+    jump factNotHighest lessThan factScaled maxWeight
+    set currTarget b_factory
+    set targetX factX
+    set targetY factY
+    set maxWeight factScaled
+    noFact:
+    set factScaled 0
+    factNotHighest:
+
+    jump noReact equal reactWeight 0
+    jump noReact equal isReactor false
+    op sub aX reactX hereX       # Calculate weighted distance to Reactor
+    op pow aXsq aX 2
+    op sub bY hereY reactY
+    op pow bYsq bY 2
+    op add c2 aXsq bYsq
+    op sqrt reactDist c2 c2
+    op div reactDist 1 reactDist 
+    op mul reactScaled reactDist reactWeight
+    jump reactNotHighest lessThan reactScaled maxWeight
+    set currTarget b_reactor
+    set targetX reactX
+    set targetY reactY
+    set maxWeight reactScaled
+    noReact:
+    set reactScaled 0
+    reactNotHighest:
+
+    jump noUnit equal enemyUnit null
+    op sub aX unitX hereX        # Calculate weighted distance to enemy units
+    op pow aXsq aX 2
+    op sub bY hereY unitY
+    op pow bYsq bY 2
+    op add c2 aXsq bYsq
+    op sqrt unitDist c2 c2
+    op div unitDist 1 unitDist 
+    op mul unitScaled unitDist unitWeight
+    jump unitNotHighest lessThan unitScaled maxWeight
+    set currTarget enemyUnit
+    set targetX unitX
+    set targetY unitY
+    set maxWeight unitScaled
+    sensor unitMaxHP enemyUnit @maxHealth  # If the enemy unit has less HP than the PDS threshold, it will use PDS ranges - This way it won't fire slow main weapons at a faraway flare.
+    jump bigEnough greaterThan unitMaxHP PDSThreshold
+    set isPDSMode true 
+    noUnit:
+    set unitScaled 0
+    bigEnough:
+    unitNotHighest:
+set @counter reti
