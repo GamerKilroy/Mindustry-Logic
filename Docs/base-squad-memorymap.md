@@ -1,8 +1,8 @@
 0       @unit       Leader                              The Squad Leader
 +1      INT         SQUAD_TYPE                          The BITMASK representing the Squad's Type. Refer to SquadTypes.md
-+2      BOOL        GCOMMAND - STOP                     GCOMMANDS, common for all SQUADS
-+3      BOOL        GCOMMAND - REGROUP
-+4      BOOL        GCOMMAND - OPEN
++2      BOOL        SquadInitialized                    0 when the squad manager has not initialized the squad data yet.                      
++3      BOOL        GCOMMAND - REGROUP                  GCOMMANDS, common for all SQUADS
++4      BOOL        GCOMMAND - STOP
 +5      BOOL        GCOMMAND - OPEN    
 +6      BOOL        GCOMMAND - OPEN
 +7      BOOL        GCOMMAND - OPEN

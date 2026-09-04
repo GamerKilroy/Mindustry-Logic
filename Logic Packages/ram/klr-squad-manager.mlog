@@ -28,10 +28,27 @@ continueSquadSearch:
             sensor isLeaderDead u_leader @dead
             jump leaderDead equal isLeaderDead true
 
-            sensor leader_x u_leader @x    
+            op add WMEM_ADDR thisSquadMemoryAddr 2   #Check if squad is already initialized
+            op add reti @counter 2
+            jump doWMEMread always 0 0
+            set reti 0
+
+            jump squadAlreadyInitialized equal WMEMBUFF_OUT true #Initialize the squad
+
+                op add WMEM_ADDR thisSquadMemoryAddr 2   #Just set init to true, for now no extra logic here but open for expansion
+                set WMEMBUFF_IN true
+                op add reti @counter 2
+                jump doWMEMwrite always 0 0
+                set reti 0
+
+            squadAlreadyInitialized:
+
+            sensor leader_x u_leader @x     #Sensor the leader's position
             sensor leader_y u_leader @y 
 
             
+
+
 
         
 
