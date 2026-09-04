@@ -6,7 +6,40 @@ draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set SQUADLOOKUP cell1 #Squad Lookup Initialization
 
+set i 0
+continueSquadSearch:
+    read squadNumber SQUADLOOKUP i  #Read from Squad Cell each even data slot
 
+    jump noSquadHereSearch equal squadNumber 0 #There is no squad in the slow, jump to next
+    
+        op shr accepts  THIS_MANAGES i    #Check if you can join this squad type
+        op and accepts  accepts 0x01
+
+        jump SquadNotAcceptedSearch equal accepts false #If you cannot, jump to next
+            op add thisSquadMemoryAddr  i 1     #Otherwise, read the Leader from RAM
+            read squadLookupMemoryAddr SQUADLOOKUP thisSquadMemoryAddr
+
+            set WMEM_ADDR squadLookupMemoryAddr # #Lookup the Leader in RAM
+            op add reti @counter 2
+            jump doWMEMread always 0 0
+            set reti 0
+
+            set u_leader WMEMBUFF_OUT # Check if the leader is alive
+            sensor isLeaderDead u_leader @dead
+            jump leaderDead equal isLeaderDead true
+
+            sensor leader_x u_leader @x    
+            sensor leader_y u_leader @y 
+
+            
+
+        
+
+        SquadNotAcceptedSearch:
+        leaderDead:
+    noSquadHereSearch:
+    op add i  i 2
+jump continueSquadSearch lessThan i 64 #Loop through all 32 squads.
 
 ##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
 doWMEMread: #WMEM Read - Read from RAM Address
@@ -72,39 +105,4 @@ doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR b
     set ramACK 0
 set @counter reti
 
-doSquadSearch: #SquadSearch function. Will look for squads with a Valid ID to join.
-    set i 0
-    set VALID_SQUADS 0
-    continueSquadSearch:
-        read squadNumber SQUADLOOKUP i  #Read from Squad Cell each even data slot
-
-        jump noSquadHereSearch equal squadNumber 0 #There is no squad in the slow, jump to next
-        
-            op shr accepts  THIS_MANAGES i    #Check if you can join this squad type
-            op and accepts  accepts 0x01
-
-            jump SquadNotAcceptedSearch equal accepts false #If you cannot, jump to next
-                op add thisSquadMemoryAddr  i 1     #Otherwise, read the Leader from RAM
-                read squadLookupMemoryAddr SQUADLOOKUP thisSquadMemoryAddr
-
-                set WMEM_ADDR squadLookupMemoryAddr # #Lookup the Leader in RAM
-                set reti2 reti
-                op add reti @counter 2
-                jump doWMEMread always 0 0
-                set reti2 0
-                set reti reti2
-
-                set u_leader WMEMBUFF_OUT # Find the leader position and range
-                sensor leaderX u_leader @x 
-                sensor leaderY u_leader @y
-                sensor leaderRange u_leader @range
-                ucontrol within leaderX leaderY leaderRange closeToLeader
-
-                op add VALID_SQUADS VALID_SQUADS 1 #If it's a valid squad, add it to the counter
-
-            SquadNotAcceptedSearch:
-            tooFarFromLeader:
-        noSquadHereSearch:
-        op add i  i 2
-    jump continueSquadSearch lessThan i 64 #Loop through all 32 squads.
-set @counter reti
+    

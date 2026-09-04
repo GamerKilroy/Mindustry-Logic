@@ -72,7 +72,7 @@ init:
         
         ucontrol flag bitpack
 
-        set WMEM_ADDR ADDR      
+        set WMEM_ADDR ADDR                     #Write yourself in memory at your address
         set WMEMBUFF_IN @unit
         op add reti @counter 2
         jump doWMEMwrite always 0 0

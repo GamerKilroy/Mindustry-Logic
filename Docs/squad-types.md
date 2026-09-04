@@ -1,5 +1,6 @@
 ## Basic Squad Bitmask
 
+BITMASKED VALUE (LSB)
 0 - Artillery
 1 - Shield
 2 - Drop

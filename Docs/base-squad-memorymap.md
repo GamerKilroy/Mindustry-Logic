@@ -1,13 +1,13 @@
-0       @unit       Leader
-+1      INT         Sergeant#
-+2      INT         Soldier#
-+3      INT         SQUAD_TYPE
-+4      BOOL        isSquadValid
-+5
-+6
-+7
+0       @unit       Leader                              The Squad Leader
++1      INT         SQUAD_TYPE                          The BITMASK representing the Squad's Type. Refer to SquadTypes.md
++2      BOOL        GCOMMAND - STOP                     GCOMMANDS, common for all SQUADS
++3      BOOL        GCOMMAND - REGROUP
++4      BOOL        GCOMMAND - OPEN
++5      BOOL        GCOMMAND - OPEN    
++6      BOOL        GCOMMAND - OPEN
++7      BOOL        GCOMMAND - OPEN
 -----
-+8      @unit       Sergeant List
++8      @unit       Sergeant List                       Currently unused
 +9      @unit       Sergeant List
 +10     @unit       Sergeant List
 +11     @unit       Sergeant List
@@ -25,7 +25,7 @@
 +22     @unit       Sergeant List
 +23     @unit       Sergeant List
 -----
-+24     INT         logic1 Command 1    
++24     INT         logic1 Command 1                       Logic Commands for Soldiers
 +25     INT         logic1 Command 2
 +26     INT         logic2 Command 1
 +27     INT         logic2 Command 2
@@ -34,7 +34,7 @@
 +30     INT         logic4 Command 1
 +31     INT         logic4 Command 2 
 -----
-+32     INT         logic1 Waypoint X 1
++32     INT         logic1 Waypoint X 1                     Logic Waypoints for Soldiers
 +33     INT         logic1 Waypoint Y 1
 +34     INT         logic1 Waypoint X 2
 +35     INT         logic1 Waypoint Y 2
