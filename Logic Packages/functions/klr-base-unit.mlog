@@ -79,14 +79,17 @@ init:
         set reti 0
 
     end
-
+ 
 noRam:
     ucontrol flag 1 #In absence of RAM, we only use FLAG. 
+    end
 
 roaming:
     jump roamingDefault equal hasRAM false
     jump searchSquadOBAI equal hasRAM true
     end
+ 
+    roamingDefault:
 
         op add reti @counter 2    # Call target finding function
         jump targetFind always 0 0
