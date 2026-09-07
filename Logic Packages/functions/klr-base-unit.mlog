@@ -380,7 +380,7 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     set writtenToUnit SQUADADDR
 
     op add personalIsLeader ADDR 2  #As well as saving that you're the leader!
-    set WMEM_ADDR persoanlIsLeader
+    set WMEM_ADDR personalIsLeader
     set WMEMBUFF_IN SQUADADDR
     op add reti2 @counter 2
     jump doWMEMwrite always 0 0
