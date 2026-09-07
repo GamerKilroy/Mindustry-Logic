@@ -82,14 +82,14 @@ init:
  
 noRam:
     ucontrol flag 1 #In absence of RAM, we only use FLAG. 
-    end
+end
 
 roaming:
-    jump roamingDefault equal hasRAM false
-    jump searchSquadOBAI equal hasRAM true
+    jump controlKAI equal hasRAM false
+    jump controlOBAI equal hasRAM true
     end
  
-    roamingDefault:
+    controlKAI:
 
         op add reti @counter 2    # Call target finding function
         jump targetFind always 0 0
@@ -124,9 +124,9 @@ roaming:
 
         # Insert specific basic unit movement here
         ucontrol approach 0 0 0
-        end
+    end
 
-    searchSquadOBAI: #If you're an OBAI unit, look for a squad to join. There should usually be one unless all leaders are dead.
+    controlOBAI: #If you're an OBAI unit, look for a squad to join. There should usually be one unless all leaders are dead.
 
         jump followSquad greaterThan SQUADADDR 0    # If you have a squad already, do not roam.
 
@@ -149,26 +149,25 @@ roaming:
 
             onlyOneValid:
 
-            op add reti @counter 2                  # Request to join the correct Squad
-            jump doJoinSquad always 0 0
-            set reti 1
+                op add reti @counter 2                  # Request to join the correct Squad
+                jump doJoinSquad always 0 0
+                set reti 1
 
             end
 
             noValidSquads:                          # If there are no valid squads, check if this unit can lead.
-            jump cannotLead lessThan SQUADID_CAN_LEAD 1 #If no, just do RoamingOBAI
+                jump cannotLead lessThan SQUADID_CAN_LEAD 1 #If no, just do RoamingOBAI
 
-            set mustCreate true
-
-            op add reti @counter 2                # Otherwise, call the squad creation function
-            jump doCreateSquad always 0 0
-            set reti 1
+                op add reti @counter 2                # Otherwise, call the squad creation function
+                jump doCreateSquad always 0 0
+                set reti 1
+            
+            end
 
             cannotLead:
 
             jump roamingOBAI always 0 0    ## If there is no squad and cannot create one, then just do RoamingOBAI logic.
-            end
-
+        end
 
         followSquad:
 
@@ -187,6 +186,7 @@ roaming:
 
             ucontrol approach 0 0 0
         end
+    end
 
     roamingOBAI: #If you're not part of a squad, still try to use your RAM to your best potential.
         set 0 0
@@ -310,6 +310,9 @@ doJoinSquad: #SquadJoin function. Will join the selected # squad.
             op and accepts accepts 0x01
 
             jump SquadNotAcceptedJoin equal accepts false   #Keep count of the valid squads, when it maches, request to join
+                op shr accepts SQUADID_CAN_LEAD i
+                op and canJoinAsSergeant accepts 0x01
+
                 jump reachedJoinable equal squadCounter squadToJoin
                 op add squadCounter squadCounter 1
 
@@ -331,9 +334,42 @@ doJoinSquad: #SquadJoin function. Will join the selected # squad.
 
         set reti2 reti   #And save it's location in RAM in your unit memory space
         op add reti2 @counter 2
-        jump doWMEMwrite 
+        jump doWMEMwrite always 0 0
         set reti2 0
         set reti reti2
+
+        jump notSergeant equal canJoinAsSergeant false
+            op add i squadAddrLocation 64
+            op add endSergListAddr i 64
+            
+
+            iterateSergList:
+                set WMEM_ADDR i
+
+                set reti2 reti
+                op add reti2 @counter 2
+                jump doWMEMread always 0 0
+                set reti2 0
+                set reti reti2
+
+                jump notFree notEqual WMEMBUFF_OUT null
+                    set WMEMBUFF_IN @unit
+
+                    set reti2 reti
+                    op add reti2 @counter 2
+                    jump doWMEMwrite always 0 0
+                    set reti2 0
+                    set reti reti2
+
+                    jump sergeantDone always 0 0
+
+                notFree:
+
+                op add i i 1
+            jump iterageSergList lessThan i endSergListAddr
+
+        sergeantDone:
+        notSergeant:
 
         set SQUADADDR squadAddrLocation   # And in the Unit's flag.
         sensor originalBitpack @unit @flag
@@ -348,7 +384,7 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     set WMEMBUFF_LEN 2 #Request a Squad Malloc
     set reti2 reti
     op add reti2 @counter 2
-    jump doWMEMmalloc 0 0
+    jump doWMEMmalloc always 0 0
     set reti2 0
     set reti reti2
 

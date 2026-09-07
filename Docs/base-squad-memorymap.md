@@ -3,27 +3,27 @@
 +2      BOOL        SquadInitialized                    0 when the squad manager has not initialized the squad data yet.                      
 +3      BOOL        GCOMMAND - REGROUP                  GCOMMANDS, common for all SQUADS
 +4      BOOL        GCOMMAND - STOP
-+5      BOOL        GCOMMAND - OPEN    
-+6      BOOL        GCOMMAND - OPEN
-+7      BOOL        GCOMMAND - OPEN
++5      BOOL        GCOMMAND - UNUSED    
++6      BOOL        GCOMMAND - UNUSED
++7      BOOL        GCOMMAND - UNUSED
 -----
-+8      @unit       Sergeant List                       Currently unused
-+9      @unit       Sergeant List
-+10     @unit       Sergeant List
-+11     @unit       Sergeant List
-+12     @unit       Sergeant List
-+13     @unit       Sergeant List
-+14     @unit       Sergeant List
-+15     @unit       Sergeant List
++8      UNUSED                       Currently unused
++9      UNUSED
++10     UNUSED
++11     UNUSED
++12     UNUSED
++13     UNUSED
++14     UNUSED
++15     UNUSED
 -----
-+16     @unit       Sergeant List
-+17     @unit       Sergeant List
-+18     @unit       Sergeant List
-+19     @unit       Sergeant List
-+20     @unit       Sergeant List
-+21     @unit       Sergeant List
-+22     @unit       Sergeant List
-+23     @unit       Sergeant List
++16     UNUSED
++17     UNUSED
++18     UNUSED
++19     UNUSED
++20     UNUSED
++21     UNUSED
++22     UNUSED
++23     UNUSED
 -----
 +24     INT         logic1 Command 1                       Logic Commands for Soldiers
 +25     INT         logic1 Command 2
@@ -69,3 +69,7 @@
 +61     INT         logic4 Waypoint Y 3
 +62     INT         logic4 Waypoint X 4
 +63     INT         logic4 Waypoint Y 4
+-----
++64    @unit        Sergeant List (Unordered)
+to
+END
