@@ -128,23 +128,29 @@ roaming:
 
     controlOBAI:        #If you're an OBAI unit, look for a squad to join. There should usually be one unless all leaders are dead.
 
+        set aa_lookLeader true
+
         op add isLeaderAddr ADDR 2   # If you're the leader, then lead - Don't follow!
         set WMEM_ADDR isLeaderAddr
         op add reti @counter 2
         jump doWMEMread always 0 0
         set reti 0
-        jump leadSquad equal WMEMBUFF_IN true 
+
+        set aa_lookLeaderDone true
+        set aa_isLeader WMEMBUFF_OUT
+
+        jump leadSquad equal WMEMBUFF_OUT @this 
 
         jump followSquad greaterThan SQUADADDR 0    # If you have a squad already, do not roam.
         
-
+            set aa_trySearch true
             op add reti @counter 2                  # Search for valid squads
             jump doSquadSearch always 0 0
             set reti 0
 
             set squadToJoin 1
 
-            set triedJoin true
+            set aa_tryJoin true
 
             jump noValidSquads equal VALID_SQUADS 0 # If there are 0 squads, try to create one
             jump onlyOneValid equal VALID_SQUADS 1 # If there is only one, then join that
@@ -153,17 +159,22 @@ roaming:
                 op div RNGroll scale 
                 op floor RNGroll RNGroll 0
 
+                set aa_RNGroll true
+
                 set squadToJoin RNGroll
 
             onlyOneValid:
 
+                set aa_oneJoin true
                 op add reti @counter 2                  # Request to join the correct Squad
                 jump doJoinSquad always 0 0
                 set reti 1
 
             end
 
-            noValidSquads:                          # If there are no valid squads, check if this unit can lead.
+            noValidSquads:        
+            
+                set aa_create true                  # If there are no valid squads, check if this unit can lead.
                 jump cannotLead lessThan SQUADID_CAN_LEAD 1 #If no, just do RoamingOBAI
 
                 op add reti @counter 2                # Otherwise, call the squad creation function
@@ -367,7 +378,7 @@ doJoinSquad: #SquadJoin function. Will join the selected # squad.
                 notFree:
 
                 op add i i 1
-            jump iterageSergList lessThan i endSergListAddr
+            jump iterateSergList lessThan i endSergListAddr
 
         sergeantDone:
         notSergeant:
@@ -376,15 +387,17 @@ doJoinSquad: #SquadJoin function. Will join the selected # squad.
         sensor originalBitpack @unit @flag
         op mul toAdd SQUADADDR 10000000
         op add newBitpack toAdd originalBitpack
-        ucontrol flag newBitpack
+        #ucontrol flag newBitpack
 
 set @counter reti
 
 doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad creation.
 
+    set aa_didcreate true
+
     set WMEMBUFF_LEN 2 #Request a Squad Malloc
     set reti2 reti
-    op add reti2 @counter 2
+    op add reti @counter 2
     jump doWMEMmalloc always 0 0
     set reti2 0
     set reti reti2
@@ -399,7 +412,8 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
 
     set WMEMBUFF_IN @unit   #Write your own reference in RAM as a Leader
     set WMEM_ADDR SQUADADDR
-    op add reti2 @counter 2
+    set reti2 reti
+    op add reti @counter 2
     jump doWMEMwrite always 0 0
     set reti2 0
     set reti reti2
@@ -409,7 +423,8 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     op add personalSquadAddr ADDR 1  #Write it in your own memory as well
     set WMEM_ADDR personalSquadAddr
     set WMEMBUFF_IN SQUADADDR
-    op add reti2 @counter 2
+    set reti2 reti
+    op add reti @counter 2
     jump doWMEMwrite always 0 0
     set reti2 0
     set reti reti2
@@ -419,15 +434,16 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     op add personalIsLeader ADDR 2  #As well as saving that you're the leader!
     set WMEM_ADDR personalIsLeader
     set WMEMBUFF_IN SQUADADDR
-    op add reti2 @counter 2
+    set reti2 reti
+    op add reti @counter 2
     jump doWMEMwrite always 0 0
     set reti2 0
     set reti reti2
 
     set markedAsLeader true
 
-    set reti2 reti   #And save it's location in RAM in your unit memory space
-    op add reti2 @counter 2
+    set reti2 reti
+    op add reti @counter 2
     jump doWMEMwrite 
     set reti2 0
     set reti reti2

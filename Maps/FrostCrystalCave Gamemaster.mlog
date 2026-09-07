@@ -106,7 +106,7 @@ gameInit:
 
     set retiMem reti
     op add reti @counter 1
-    jump resetPointers always 0 0
+    ##jump resetPointers always 0 0
     set reti retiMem
 
     set gamestate 1
