@@ -89,7 +89,7 @@ roaming:
     jump controlOBAI equal hasRAM true
     end
  
-    controlKAI:
+    controlKAI:         # This unit has no RAM available, so it will use a simpler logic based on FLAG.
 
         op add reti @counter 2    # Call target finding function
         jump targetFind always 0 0
@@ -126,9 +126,17 @@ roaming:
         ucontrol approach 0 0 0
     end
 
-    controlOBAI: #If you're an OBAI unit, look for a squad to join. There should usually be one unless all leaders are dead.
+    controlOBAI:        #If you're an OBAI unit, look for a squad to join. There should usually be one unless all leaders are dead.
+
+        op add isLeaderAddr ADDR 2   # If you're the leader, then lead - Don't follow!
+        set WMEM_ADDR isLeaderAddr
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+        jump leadSquad equal WMEMBUFF_IN true 
 
         jump followSquad greaterThan SQUADADDR 0    # If you have a squad already, do not roam.
+        
 
             op add reti @counter 2                  # Search for valid squads
             jump doSquadSearch always 0 0
@@ -168,32 +176,25 @@ roaming:
 
             jump roamingOBAI always 0 0    ## If there is no squad and cannot create one, then just do RoamingOBAI logic.
         end
-
-        followSquad:
-
-            op add isLeaderAddr ADDR 2   # If you're the leader, then lead - Don't follow!
-            set WMEM_ADDR isLeaderAddr
-            op add reti @counter 2
-            jump doWMEMread always 0 0
-            set reti 0
-            jump leadSquad equal WMEMBUFF_IN true 
-
-            set WMEM_ADDR SQUADADDR      ## Check leader sanity. On leader death, leave the squad and look for a new one.
-            op add reti @counter 2
-            jump doWMEMread always  0 0
-            set reti 0
-            sensor isLeaderDead WMEMBUFF_OUT @dead 
-
-            ucontrol approach 0 0 0
-        end
     end
 
-    roamingOBAI: #If you're not part of a squad, still try to use your RAM to your best potential.
+    roamingOBAI:        #If you're not part of a squad, still try to use your RAM to your best potential.
         set 0 0
     end 
 
-    leadSquad:
+    leadSquad:          #If you're the leader, you're expected to do more!
         set 0 0
+    end
+
+    followSquad:        #Otherwise, just follow orders.
+
+        set WMEM_ADDR SQUADADDR      ## Check leader sanity. On leader death, leave the squad and look for a new one.
+        op add reti @counter 2
+        jump doWMEMread always  0 0
+        set reti 0
+        sensor isLeaderDead WMEMBUFF_OUT @dead 
+
+        ucontrol approach 0 0 0
     end
 
 
@@ -449,7 +450,7 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     
 set @counter reti
     
-targetFind: #OLD RoamingDefault is not a targetFinding function. Will look for valid targets based on weighted distance.
+targetFind: #OLD RoamingDefault is now a targetFinding function. Will look for valid targets based on weighted distance.
     ulocate building core true @copper coreX coreY isCore b_core #Locate the enemy core
     ulocate building turret true @copper turretX turretY isTurret b_turret #find the closest enemy turret
     ulocate building generator true @copper genX genY isGenerator b_generator #find the closest enemy generator
