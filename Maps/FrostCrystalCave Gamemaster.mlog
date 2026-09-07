@@ -149,14 +149,14 @@ runningConfig:
     set reti retiMem
     
     set WMEM_ADDR 50
-    set WMEMBUFF_IN @dp-klr-quasar-jmp
+    set WMEMBUFF_IN @dagger
     set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0
     set reti retiMem
 
     set WMEM_ADDR 51
-    set WMEMBUFF_IN @dp-klr-nova-jmp
+    set WMEMBUFF_IN @horizon
     set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0

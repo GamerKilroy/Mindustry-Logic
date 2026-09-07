@@ -1,14 +1,14 @@
 # Base Unit Module and Example
 
 setrate 500
-set TARGET_UNIT @dagger
+set TARGET_UNIT @flare
 
 set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set SQUADLOOKUP cell1 #Squad Lookup Initialization
-set SQUADID_CAN_JOIN 0x0001
-set SQUADID_CAN_LEAD 0x0001
+set SQUADID_CAN_JOIN 0x0008
+set SQUADID_CAN_LEAD 0x0008
 
 set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
 set turretWeight 1  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
@@ -129,6 +129,7 @@ roaming:
     controlOBAI:        #If you're an OBAI unit, look for a squad to join. There should usually be one unless all leaders are dead.
 
         wait 0.001
+
         set aa_lookLeader true
 
         op add isLeaderAddr ADDR 2   # If you're the leader, then lead - Don't follow!
@@ -195,8 +196,6 @@ roaming:
     end 
 
     leadSquad:          #If you're the leader, you're expected to do more!
-        set 0 0
-
         ####################### CUSTOM LEADER LOGIC
         op add currStepAddr ADDR 4
         set WMEM_ADDR currStepAddr
@@ -212,14 +211,14 @@ roaming:
         end
 
         wp1:
-            ucontrol move 70 60
-            ucontrol within 70 60 2 isDone
+            ucontrol move 75 75
+            ucontrol within 75 75 2 isDone
             op add newStep currStep isDone
             jump updateCurrStep equal isDone 1
         end
         wp2:
-            ucontrol move 120 60
-            ucontrol within 120 60 2 isDone
+            ucontrol move 130 130
+            ucontrol within 130 130 2 isDone
             op sub newStep currStep isDone
             jump updateCurrStep equal isDone 1
         end
@@ -230,7 +229,6 @@ roaming:
         op add reti @counter 2
         jump doWMEMwrite always 0 0
         set reti 0
-
     end
 
     followSquad:        #Otherwise, just follow orders.
@@ -241,7 +239,25 @@ roaming:
         set reti 0
         sensor isLeaderDead WMEMBUFF_OUT @dead 
 
-        ucontrol approach 0 0 0
+        set u_leader WMEMBUFF_OUT
+        sensor leaderX u_leader @x
+        sensor leaderY u_leader @y 
+        sensor leaderDeg u_leader @rotation
+
+        op add behindLeader leaderDeg 180
+        op idiv carryOver behindLeader behindLeader 360
+        op mod behindLeader behindLeader 360
+
+
+        op mul radBehind behindLeader @degToRad
+        op cos targetX radBehind 
+        op sin targetT radBehind
+        op mul targetX targetX 7
+        op mul targetY targetY 7
+        op add targetX targetX leaderX
+        op add targetY targetY leaderY
+
+        ucontrol approach leaderX leaderY 2
     end
 
 
@@ -313,15 +329,15 @@ doSquadSearch: #SquadSearch function. Will look for squads with a Valid ID to jo
     set i 0
     set VALID_SQUADS 0
     continueSquadSearch:
-        read squadNumber SQUADLOOKUP i  #Read from Squad Cell each even data slot
+        op mul readAddr i 2
+        read squadNumber SQUADLOOKUP readAddr  #Read from Squad Cell each even data slot
 
         jump noSquadHereSearch equal squadNumber 0 #There is no squad in the slow, jump to next
         
-            op shr accepts  SQUADID_CAN_JOIN i    #Check if you can join this squad type
-            op and accepts  accepts 0x01
+            op and accepts squadNumber SQUADID_CAN_JOIN    #Check if you can join this squad type
 
             jump SquadNotAcceptedSearch equal accepts false #If you cannot, jump to next
-                op add thisSquadMemoryAddr  i 1     #Otherwise, read the Leader from RAM
+                op add thisSquadMemoryAddr readAddr 1     #Otherwise, read the Leader from RAM
                 read squadLookupMemoryAddr SQUADLOOKUP thisSquadMemoryAddr
 
                 set WMEM_ADDR squadLookupMemoryAddr # #Lookup the Leader in RAM
@@ -335,31 +351,31 @@ doSquadSearch: #SquadSearch function. Will look for squads with a Valid ID to jo
                 sensor leaderX u_leader @x 
                 sensor leaderY u_leader @y
                 sensor leaderRange u_leader @range
-                ucontrol within leaderX leaderY leaderRange closeToLeader
+                ucontrol within leaderX leaderY 30 closeToLeader
 
+                jump tooFarFromLeader notEqual closeToLeader true
                 op add VALID_SQUADS VALID_SQUADS 1 #If it's a valid squad, add it to the counter
 
             SquadNotAcceptedSearch:
             tooFarFromLeader:
         noSquadHereSearch:
-        op add i  i 2
-    jump continueSquadSearch lessThan i 64 #Loop through all 32 squads.
+        op add i  i 1
+    jump continueSquadSearch lessThan i 32 #Loop through all 32 squads.
 set @counter reti
     
 doJoinSquad: #SquadJoin function. Will join the selected # squad.
     set i 0
     set squadCounter 0
     continueSquadJoin: #Iterate through squads as for squadSearch
-        read squadNumber SQUADLOOKUP i
+        op mul readAddr i 2
+        read squadNumber SQUADLOOKUP readAddr
 
         jump noSquadHereJoin equal squadNumber 0
         
-            op shr accepts SQUADID_CAN_JOIN i
-            op and accepts accepts 0x01
+            op and accepts squadNumber SQUADID_CAN_JOIN
 
             jump SquadNotAcceptedJoin equal accepts false   #Keep count of the valid squads, when it maches, request to join
-                op shr accepts SQUADID_CAN_LEAD i
-                op and canJoinAsSergeant accepts 0x01
+                op and accepts squadNumber SQUADID_CAN_LEAD
 
                 jump reachedJoinable equal squadCounter squadToJoin
                 op add squadCounter squadCounter 1
@@ -367,14 +383,14 @@ doJoinSquad: #SquadJoin function. Will join the selected # squad.
             SquadNotAcceptedJoin:
 
         noSquadHereJoin:
-        op add i i 2
+        op add i i 1
     jump continueSquadJoin lessThan i 32
 
     set @counter reti
 
     reachedJoinable: #Once you have reached the correct squad number, join it
         set aa_reachedJoinable true
-        op add squadAddrLocation i 1
+        op add squadAddrLocation readAddr 1
         read squadAddrLocation SQUADLOOKUP squadAddrLocation
 
         op add lUnitSquadAddrSaved ADDR 1
@@ -445,7 +461,7 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     set SQUADADDR WMEMBUFF_OUT #set your own squad address
 
     op sub cellSpace SQUADADDR 7000
-    op idiv cellSpace cellSpace 256 #Calculate the correct cell space based on assigned memory location
+    op idiv cellSpace cellSpace 64 #Calculate the correct cell space based on assigned memory location
 
     set WMEMBUFF_IN @unit   #Write your own reference in RAM as a Leader
     set WMEM_ADDR SQUADADDR
@@ -482,7 +498,7 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     set reti2 reti
     op add reti @counter 2
     jump doWMEMwrite 
-    set reti2 0
+    set reti2 0 sa
     set reti reti2
 
     set writtenLeadToUnit true
