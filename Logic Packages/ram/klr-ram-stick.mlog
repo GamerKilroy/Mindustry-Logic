@@ -213,7 +213,7 @@ malloc:
         jump doReset always 0 0
 
     squadMalloc:
-        jump outOfMemory greaterThan unitMemoryPointer maxUnitMemory
+        jump outOfMemory greaterThan squadMemoryPointer maxSquadMemory
 
         waitForStackSquad:
         sensor stackBusy POINTERCELL 2

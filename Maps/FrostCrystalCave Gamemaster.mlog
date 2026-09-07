@@ -83,15 +83,14 @@ jump noTouchInput equal FPshoot false
 
 noTouchInput:
 
-op add reti @counter 2
-jump drawScreen equal gamestate 0
-jump drawScreen equal gamestate 1
-
 op add reti @counter 1
-jump gameInit equal gamestate 0 #Write all INIT data to ROM
+jump gameInit equal  0 #Write all INIT data to ROM
 
 op add reti @counter 1
 jump beforeGameStart equal gamestate 1 #Difficulty selection & Game Start
+
+op add reti @counter 1
+jump drawScreen equal gamestate 1
 
 op add reti @counter 1
 jump runningConfig equal gamestate 1 #Load difficulty data to RAM
@@ -118,14 +117,6 @@ beforeGameStart:
     op mod secMod secMod 2
     jump mission1text equal secMod 0
     jump mission2text equal secMod 1
-
-    set disableBuildingPointer 0
-    fetch playerCount totalPlayers @sharded 0 0
-    disableSingleBuilder:
-        fetch unit currUnit @sharded 0 disableBuildingPointer
-        setprop @buildSpeed currUnit -1
-        op add disableBuildingPointer 1
-        jump disableSingleBuilder lessThan disableBuildingPointer playerCount
 
     mission1text:
         print "Wave timer inactive"
