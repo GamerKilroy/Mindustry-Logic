@@ -7,8 +7,8 @@ set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set SQUADLOOKUP cell1 #Squad Lookup Initialization
-set SQUADID_CAN_JOIN 0x0000
-set SQUADID_CAN_LEAD 0x0000
+set SQUADID_CAN_JOIN 0x0001
+set SQUADID_CAN_LEAD 0x0001
 
 set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
 set turretWeight 1  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
@@ -136,6 +136,8 @@ roaming:
 
             set squadToJoin 1
 
+            set triedJoin true
+
             jump noValidSquads equal VALID_SQUADS 0 # If there are 0 squads, try to create one
             jump onlyOneValid equal VALID_SQUADS 1 # If there is only one, then join that
                 op div scale  1 VALID_SQUADS       # Otherwise roll for which one to join
@@ -155,6 +157,8 @@ roaming:
 
             noValidSquads:                          # If there are no valid squads, check if this unit can lead.
             jump cannotLead lessThan SQUADID_CAN_LEAD 1 #If no, just do RoamingOBAI
+
+            set mustCreate true
 
             op add reti @counter 2                # Otherwise, call the squad creation function
             jump doCreateSquad always 0 0
@@ -348,6 +352,9 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     set reti2 0
     set reti reti2
 
+    set triedCreate true
+    set receivedSquadAddr WMEMBUFF_OUT
+
     set SQUADADDR WMEMBUFF_OUT #set your own squad address
 
     op idiv cellSpace SQUADADDR 256 #Calculate the correct cell space based on assigned memory location
@@ -360,6 +367,8 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     set reti2 0
     set reti reti2
 
+    set writtenToSquad SQUADADDR
+
     op add personalSquadAddr ADDR 1  #Write it in your own memory as well
     set WMEM_ADDR personalSquadAddr
     set WMEMBUFF_IN SQUADADDR
@@ -367,6 +376,8 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     jump doWMEMwrite always 0 0
     set reti2 0
     set reti reti2
+
+    set writtenToUnit SQUADADDR
 
     op add personalIsLeader ADDR 2  #As well as saving that you're the leader!
     set WMEM_ADDR persoanlIsLeader
@@ -376,20 +387,29 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
     set reti2 0
     set reti reti2
 
+    set markedAsLeader true
+
     set reti2 reti   #And save it's location in RAM in your unit memory space
     op add reti2 @counter 2
     jump doWMEMwrite 
     set reti2 0
     set reti reti2
 
+    set writtenLeadToUnit true
+
+
     write SQUADID_CAN_LEAD SQUADLOOKUP cellSpace # Publish the Advert in the Squad Memory Cell
     op add cellSpace cellSpace 1
     write WMEMBUFF_OUT SQUADLOOKUP cellSpace
+
+    set advertCreate true
 
     sensor originalBitpack @unit @flag #Update your own flag
     op mul toAdd SQUADADDR 10000000
     op add newBitpack toAdd originalBitpack
     ucontrol flag newBitpack    
+
+    set createFlagWritten true
     
 set @counter reti
     
