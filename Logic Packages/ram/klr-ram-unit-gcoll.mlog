@@ -1,11 +1,6 @@
 # Unit Table garbage collector. wProc running at low intensity, scanning Dynamic Memory for units
 # Read or Write requests get in via remote commands write to the following variable:
 
-set baseUnitMemoryAddr 1000 #BASE Dynamic Memory Parameters
-set baseUnitMemoryLen 3900
-set baseSquadMemoryAddr 7000
-set baseSquadMemoryLen 3700
-
 set currPointer baseUnitMemoryAddr # Start the pointer for the start of memory
 
 op add reti @counter 1 #INIT function call
@@ -42,6 +37,33 @@ doInit: #Link to RAMLOOKUP and ROMLOOKUP, as well as calculating max memory area
     set RAMLOOKUP processor1
     read maxRAM RAMLOOKUP maxRAM
     set ROMLOOKUP processor2
+
+    waitSystemReady:
+        set WMEM_ADDR 0
+        op add reti @counter 1
+        jump doWMEMread always 0 0
+        jump waitSystemReady equal WMEMBUFF_OUT false
+
+    set WMEM_ADDR 8
+    op add reti @counter 1
+    jump doWMEMread always 0 0
+    set baseUnitMemoryAddr WMEMBUFF_OUT
+
+    set WMEM_ADDR 9
+    op add reti @counter 1
+    jump doWMEMread always 0 0
+    set baseUnitMemoryLen WMEMBUFF_OUT
+
+    set WMEM_ADDR 10
+    op add reti @counter 1
+    jump doWMEMread always 0 0
+    set baseSquadMemoryAddr WMEMBUFF_OUT
+
+    set WMEM_ADDR 11
+    op add reti @counter 1
+    jump doWMEMread always 0 0
+    set baseSquadMemoryLen WMEMBUFF_OUT
+
     set unitMemoryPointer baseUnitMemoryAddr
     op add maxUnitMemory unitMemoryPointer baseUnitMemoryAddr
     set squadMemoryPointer baseSquadMemoryAddr

@@ -1,0 +1,392 @@
+# Manages the gamestate, initializes waypoints, requests cutscenes and more.
+
+setrate 200
+set WMEM processor1 # Link to ram
+draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
+
+set baseUnitMemoryAddr 1000 #Base memory addresses for stack pointer refresh
+set baseUnitMemoryLen 5500
+set baseSquadMemoryAddr 7000
+set baseSquadMemoryLen 13000
+
+jump noCyclic equal @second lastSecond #1Hz Rising Edge
+    op add reti @counter 1
+    jump cyclic1Hz always 0 0
+    set lastsecond @second
+    jump endCyclic always 0 0
+noCyclic:
+    set fp1hz false
+endCyclic:
+
+op add reti @counter 1
+jump manageTouch always 0 0
+
+op add reti @counter 1
+jump drawScreen always 0 0
+
+op add reti @counter 1
+jump gameInit equal gamestate 0 #Write all INIT data to ROM
+
+op add reti @counter 1
+jump beforeGameStart equal gamestate 1 #Difficulty selection & Game Start
+
+op add reti @counter 1
+jump runningConfig equal gamestate 1 #Load difficulty data to RAM
+
+op add reti @counter 1
+jump gameStarted equal gamestate 3 #Gametime checks
+
+end
+
+gameInit:
+
+    set gameDifficulty 1
+
+    set WMEM_ADDR 8
+    set WMEMBUFF_IN baseUnitMemoryAddr
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 9
+    set WMEMBUFF_IN baseUnitMemoryLen
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 10
+    set WMEMBUFF_IN baseSquadMemoryAddr
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 11
+    set WMEMBUFF_IN baseSquadMemoryLen
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set retiMem reti
+    op add reti @counter 1
+    jump resetPointers always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 0
+    set WMEMBUFF_IN true
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set gamestate 1
+    set @counter reti
+
+beforeGameStart:
+    op floor secMod @second
+    op mod secMod secMod 2
+    jump mission1text equal secMod 0
+    jump mission2text equal secMod 1
+
+    mission1text:
+        print "Wave timer inactive"
+        message mission 1
+        jump textDone always 0 0 
+        
+
+    mission2text:
+        print "Select difficulty and START"
+        message mission 1
+        jump textDone always 0 0
+
+    textDone:
+    set @counter reti
+
+runningConfig:
+
+    set WMEM_ADDR 70
+    set WMEMBUFF_IN @nova
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 71
+    set WMEMBUFF_IN @flare
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+    
+    set WMEM_ADDR 50
+    set WMEMBUFF_IN @dagger
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 51
+    set WMEMBUFF_IN @horizon
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 52
+    set WMEMBUFF_IN @dp-klr-pulsar-sh
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    jump doneConfig equal gameDifficulty 0
+
+    set WMEM_ADDR 72
+    set WMEMBUFF_IN @dp-klr-spiroct-cr
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 53
+    set WMEMBUFF_IN @dp-klr-mace-lr
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 54
+    set WMEMBUFF_IN @fortress
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 55
+    set WMEMBUFF_IN @dp-klr-mega-ds
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 56
+    set WMEMBUFF_IN @dp-klr-spiroct-cc
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 57
+    set WMEMBUFF_IN @dp-klr-atrax-cc
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    jump doneConfig equal gameDifficulty 1
+
+    set WMEM_ADDR 58
+    set WMEMBUFF_IN @dp-klr-flare-ic
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 58
+    set WMEMBUFF_IN @dp-klr-zenith-ic
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    set WMEM_ADDR 59
+    set WMEMBUFF_IN @dp-klr-fortress-bwl
+    set retiMem reti
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+    set reti retiMem
+
+    doneConfig:
+    set gamestate 3
+    set @counter reti
+
+gameStarted:
+    set @counter reti
+
+resetPointers:
+    write baseUnitMemoryAddr cell1 1
+    write baseSquadMemoryAddr cell1 3
+set @counter reti
+
+drawScreen:
+
+    packcolor GREEN_BRIGHT 0 1 0 1
+    packcolor GREEN_DARK 0 1 0 0.2
+
+    packcolor YELLOW_BRIGHT 1 0.7 0 1
+    packcolor YELLOW_DARK 1 0.7 0 0.2
+
+    packcolor RED_BRIGHT 1 0 0 1
+    packcolor RED_DARK 1 0 0 0.2
+
+    packcolor PURPLE_BRIGHT 1 0 0.7 1
+    packcolor PURPLE_DARK 1 0 0.7 0.2
+
+    packcolor IS_SELECTED 1 1 1 0.5
+
+    draw clear 50 50 50
+    draw stroke 2
+    draw color 0 0 0 255
+    draw linerect 0 0 176 176
+
+    draw col GREEN_DARK
+    jump easyColorNotSelected notEqual gameDifficulty 0
+        set COLOR_SELECTED GREEN_BRIGHT
+        draw col IS_SELECTED
+    easyColorNotSelected:
+    draw rect 1 40 18 25
+    draw col GREEN_BRIGHT
+    draw lineRect 1 40 18 25
+    #draw line 12 96 34 158  
+
+    draw col YELLOW_DARK
+    jump normalColorNotSelected notEqual gameDifficulty 1
+        set COLOR_SELECTED YELLOW_BRIGHT
+        draw col IS_SELECTED
+    normalColorNotSelected:
+    draw rect 21 40 18 25
+    draw col YELLOW_BRIGHT
+    draw lineRect 21 40 18 25
+    #draw line 58 96 76 158 
+    #draw line 62 96 80 158
+
+    draw col RED_DARK
+    jump hardColorNotSelected notEqual gameDifficulty 2
+        set COLOR_SELECTED RED_BRIGHT
+        draw col IS_SELECTED
+    hardColorNotSelected:
+    draw rect 41 40 18 25 
+    draw col RED_BRIGHT
+    draw lineRect 41 40 18 25 
+    #draw line 88 96 106 154 
+    #draw line 92 92 110 158
+    #draw line 96 96 114 154
+
+    draw col PURPLE_DARK
+    jump eradColorNotSelected notEqual gameDifficulty 3
+        set COLOR_SELECTED PURPLE_BRIGHT
+        draw col IS_SELECTED
+    eradColorNotSelected:
+    draw rect 61 40 18 25
+    draw col PURPLE_BRIGHT
+    draw lineRect 61 40 18 25
+    #draw line 128 96 146 154 
+    #draw line 132 92 150 158
+    #draw line 136 96 154 154
+    #draw line 126 160 156 90
+
+    draw stroke 20
+    draw col COLOR_SELECTED
+    draw line 0 80 80 80
+
+    drawflush display1
+set @counter reti
+
+doWMEMread: #WMEM Read - Read from RAM Address
+    waitForReadyRead:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyRead equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyRead equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write 1 WMEM "req"
+    waitACKRead: ; jump waitACKRead equal ramACK 0
+    set ramACK 0
+set @counter reti
+
+doWMEMwrite: #WMEM Write - Write to RAM Address
+    waitForReadyWrite:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyWrite equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyWrite equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write 2 WMEM "req"
+    waitACKWrite: ; jump waitACKWrite equal ramACK 0
+    set ramACK 0
+set @counter reti
+
+manageTouch:
+    sensor touchXbase display1 @x #base display touch calculation
+    sensor touchYbase display1 @y
+    sensor mouseX @clientUnit @shootX
+    sensor mouseY @clientUnit @shootY
+    op sub touchXbase touchXbase 1
+    op sub touchYbase touchYbase 1
+    op sub touchX mouseX touchXbase
+    op sub touchY mouseY touchYbase
+    op div pixTouchX touchX 3
+    op div pixTouchY touchY 3
+    op mul pixTouchX pixTouchX 96
+    op mul pixTouchY pixTouchY 96
+
+    sensor isShooting @clientUnit @shooting
+
+    jump noShootFront equal isShooting lastShooting
+        jump noShootFront equal isShooting false
+            set FPshoot true
+            jump endShootFront always 0 0
+    noShootFront:
+        set FPshoot false
+    endShootFront:
+        set lastShooting isShooting
+
+    jump noTouchInput equal FPshoot false
+
+        jump notDifficultyInput greaterThan pixTouchY 70
+        jump notDifficultyInput lessThan pixTouchY 40
+
+        jump noTouchInput lessThan pixTouchX 0
+        jump easyDifficultyChange lessThan pixTouchX 20
+        jump mediumDifficultyChange lessThan pixTouchX 40
+        jump hardDifficultyChange lessThan pixTouchX 60
+        jump eradDifficultyChange lessThan pixTouchX 80
+
+
+        easyDifficultyChange:
+            set gameDifficulty 0
+            print "[#00ff00]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. Little extra enemy spawns. "
+            message toast 2
+            jump doneDifficultyChange always 0 0
+
+        mediumDifficultyChange:
+            set gameDifficulty 1
+            print "[#CCCC00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Standard extra enemy spawns."
+            message toast 2
+            jump doneDifficultyChange always 0 0
+
+        hardDifficultyChange:
+            set gameDifficulty 2
+            print "[#FF0000]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
+            message toast 2
+            jump doneDifficultyChange always 0 0
+
+        eradDifficultyChange:
+            set gameDifficulty 3
+            print "[#FF00FF]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and do not respect wave timer. Guardians are much tougher and have even more mechanics"
+            message toast 2
+            jump doneDifficultyChange always 0 0
+
+    notDifficultyInput:
+    doneDifficultyChange:
+
+set @counter reti

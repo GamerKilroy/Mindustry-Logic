@@ -43,6 +43,33 @@ doInit:
     read maxRAM RAMLOOKUP maxRAM
     set ROMLOOKUP processor2
     set POINTERCELL cell1
+
+    waitSystemReady:
+        set WMEM_ADDR 0
+        op add reti @counter 1
+        jump doWMEMread always 0 0
+        jump waitSystemReady equal WMEMBUFF_OUT false
+
+    set WMEM_ADDR 8
+    op add reti @counter 1
+    jump doWMEMread always 0 0
+    set baseUnitMemoryAddr WMEMBUFF_OUT
+
+    set WMEM_ADDR 9
+    op add reti @counter 1
+    jump doWMEMread always 0 0
+    set baseUnitMemoryLen WMEMBUFF_OUT
+
+    set WMEM_ADDR 10
+    op add reti @counter 1
+    jump doWMEMread always 0 0
+    set baseSquadMemoryAddr WMEMBUFF_OUT
+
+    set WMEM_ADDR 11
+    op add reti @counter 1
+    jump doWMEMread always 0 0
+    set baseSquadMemoryLen WMEMBUFF_OUT
+
     set unitMemoryPointer baseUnitMemoryAddr
     op add maxUnitMemory baseUnitMemoryLen baseUnitMemoryAddr
     set squadMemoryPointer baseSquadMemoryAddr
@@ -51,18 +78,18 @@ doInit:
     set doneInit true
 
 doReset:
-    set lasreq req
+    set lastReq req
     set req 0
 
-    set lastaddr addr
+    set lastAddr addr
     set addr 0
 
-    set lastbuffer inbuffer
+    set lastBuffer inbuffer
     set inbuffer 0
 
     set lastACKtarget ACKtarget
 
-    set lastreqlen reqLen
+    set lastReqLen reqLen
     set reqLen 0
 
     write 1 ACKtarget "ramACK"

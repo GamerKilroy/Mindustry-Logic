@@ -22,7 +22,8 @@ set PDSRange 10         # PDS weapons range, where available. This is the range 
 set PDSThreshold 500    # If the Target Enemy Unit has more Max HP than this threshold, then it will use main weapons calculations, not PDS.
 # At the default of 500, you start hitting T2 ground units with main, and T3 air units with main.
 
-
+read baseUnitMemoryAddr WMEM "baseUnitMemoryAddr"
+read baseSquadMemoryAddr WMEM "baseSquadMemoryAddr"
 ubind TARGET_UNIT ## Binds to the unit handle.
 
 jump hasUnit notEqual @unit null #If there is no unit to control, just end.
