@@ -35,7 +35,7 @@ continueSquadSearch:
             set maintCount WMEMBUFF_OUT
 
             op add reti @counter 3
-            jump maintenanceLoop greaterThan maintCount 60
+            jump maintenanceLoop greaterThan maintCount 20
             jump maintenanceLoop equal leaderDead true
             set reti 0
 
@@ -58,13 +58,32 @@ end
 maintenanceLoop:
     set maintCount 0
 
+    op add aa_debugcycle aa_debugcycle 1
+
+    op add WMEM_ADDR squadLookupMemoryAddr 16
+    set WMEMBUFF_IN 0
+    set reti2 reti
+    op add reti @counter 2
+    jump doWMEMwrite always 0 0
+    set reti2 0
+    set reti reti2
+
     op add i squadLookupMemoryAddr 64
-    op add endSergs i 64
+    op add endSergs i 63
     set newTargetLeaderAddr -1
-    set selectionProtocolMax 0
+    set selectionProcotolMax 0
     set newTargetLeaderUnit null
+
+    sensor leaderHealth u_leader @maxHealth
+    select leaderHealth equal leaderDead false leaderHealth 0
+
+
     
     continueScanningSergs:
+
+        
+
+        set aa_scanSerg1 true
         set WMEM_ADDR i
         set reti2 reti
         op add reti @counter 2
@@ -72,60 +91,105 @@ maintenanceLoop:
         set reti2 0
         set reti reti2
 
+        set aa_scanSerg2 true
+
         set currSerg WMEMBUFF_OUT
 
+        set aa_scanSerg3 true
+
         ############## DYNAMIC LEADER SELECTION RULES HERE
+        sensor sergDead currSerg @dead
 
+        jump sergStillAlive equal sergDead false
+
+            set WMEMBUFF_IN null
+            set WMEMADDR i
+
+            set reti2 reti
+            op add reti @counter 2
+            jump doWMEMwrite always 0 0
+            set reti2 0
+            set reti reti2
+
+
+        sergStillAlive:
+        sensor sergHealth currSerg @maxHealth
         
+        jump notGoodEnough lessThanEq  sergHealth leaderHealth  
+        jump notGoodEnough lessThanEq  sergHealth selectionProcotolMax  
 
+            set aa_scanSergF true
 
+            set newTargetLeaderAddr i
+            set newTargetLeaderUnit currSerg
+            set selectionProtocolMax sergHealth
+
+        notGoodEnough:
+        op add i i 1
     jump continueScanningSergs lessThan i endSergs
 
-    jump noValidLeader equal newTargetLeader -1
+    jump noValidLeader equal newTargetLeaderAddr -1
+
+    set aa_setSerg_1 true
 
     set preservedLeader null
     jump dontPreserveLeader equal leaderDead true
+        set aa_setSerg_P true
         set WMEM_ADDR squadLookupMemoryAddr
         set reti2 reti
         op add reti @counter 2
-        jump doWMEMwrite always 0 0
+        jump doWMEMread always 0 0
         set reti2 0
         set reti reti2
 
         set preservedLeader WMEMBUFF_OUT
     dontPreserveLeader:
+    set aa_setSerg_2 true
 
-    set WMEMADDR squadLookupMemoryAddr
-    set WMEMBUFF_IN newTargetLeaderUnit 
+    set WMEMBUFF_IN newTargetLeaderUnit
     set WMEM_ADDR squadLookupMemoryAddr
     set reti2 reti
     op add reti @counter 2
     jump doWMEMwrite always 0 0
     set reti2 0
     set reti reti2
-
-    set WMEMADDR newTargetLeaderAddr
+#
+    set aa_setSerg_3 true
+#
+    
     set WMEMBUFF_IN preservedLeader
-
+    set WMEM_ADDR newTargetLeaderAddr
+#
     set reti2 reti
     op add reti @counter 2
     jump doWMEMwrite always 0 0
     set reti2 0
     set reti reti2
+#
+    #op add aa_setSerg_done aa_setSerg_done 1
+    #set aa_sergFinal newTargetLeaderUnit
+    #set aa_sergPos newTargetLeaderAddr
+    #set aa_removedLeader preservedLeader
 
     set @counter reti
 
 
     noValidLeader:
+
+    set aa_noSerg_1 true
     op add WMEM_ADDR squadLookupMemoryAddr 3
     set WMEMBUFF_IN false
+
     set reti2 reti
     op add reti @counter 2
     jump doWMEMwrite always 0 0
     set reti2 0
     set reti reti2
 
+    op add aa_noSerg_done aa_noSerg_done 1
+
 set @counter reti
+end
 
 doWMEMread: #WMEM Read - Read from RAM Address
     waitForReadyRead:

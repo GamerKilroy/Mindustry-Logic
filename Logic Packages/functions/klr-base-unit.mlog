@@ -1,14 +1,14 @@
 # Base Unit Module and Example
 
 setrate 500
-set TARGET_UNIT @flare
+set TARGET_UNIT @fortress
 
 set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set SQUADLOOKUP cell1 #Squad Lookup Initialization
-set SQUADID_CAN_JOIN 0x0008
-set SQUADID_CAN_LEAD 0x0008
+set SQUADID_CAN_JOIN 0x0001
+set SQUADID_CAN_LEAD 0x0001
 
 set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
 set turretWeight 1  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
@@ -134,11 +134,11 @@ roaming:
     end 
 
     leadSquad:          #If you're the leader, you're expected to do more!
-        ucontrol move 0 0       ####################### CUSTOM SQUAD LEADER LOGIC HERE
+        ucontrol move 80 90       ####################### CUSTOM SQUAD LEADER LOGIC HERE
     end
 
     followSquad:        #Otherwise, just follow orders.
-         ucontrol move 20 0         ####################### COMMAND CHANNEL LOGIC HERE
+         ucontrol move 90 90        ####################### COMMAND CHANNEL LOGIC HERE
     end
 
 
@@ -283,6 +283,8 @@ doJoinSquad: #SquadJoin function. Will join the selected # squad.
         jump doWMEMwrite always 0 0
         set reti2 0
         set reti reti2
+
+        op and canJoinAsSergeant squadNumber SQUADID_CAN_LEAD
 
         jump notSergeant equal canJoinAsSergeant false
             op add i squadAddrLocation 64
@@ -547,16 +549,16 @@ squadProcedure:  #Special "FUNCTION" that will manage squad search join and crea
 
         set aa_lookLeader true
 
-        op add isLeaderAddr ADDR 2   # If you're the leader, then lead - Don't follow!
-        set WMEM_ADDR isLeaderAddr
+        jump noLeaderCheck equal SQUADADDR 0   
+        set WMEM_ADDR SQUADADDR  # If you're the leader, then lead - Don't follow!
         op add reti @counter 2
         jump doWMEMread always 0 0
         set reti 0
 
         set aa_lookLeaderDone true
         set aa_isLeader WMEMBUFF_OUT
-
         jump leadSquad equal WMEMBUFF_OUT @unit 
+        noLeaderCheck:
 
         jump followSquad greaterThan SQUADADDR 0    # If you have a squad already, do not roam.
         

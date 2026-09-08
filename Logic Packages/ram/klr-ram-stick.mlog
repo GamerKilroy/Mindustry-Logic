@@ -73,6 +73,8 @@ doInit:
     set doneInit true
 
 doReset:
+
+    op add WDTRESET WDTRESET 1
     set lastReq req
     set req 0
 
