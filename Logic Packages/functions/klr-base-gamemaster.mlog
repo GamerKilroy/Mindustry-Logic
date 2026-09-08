@@ -388,5 +388,9 @@ manageTouch:
 
     notDifficultyInput:
     doneDifficultyChange:
+    noTouchInput:
 
+set @counter reti
+
+cyclic1Hz:
 set @counter reti

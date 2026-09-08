@@ -134,11 +134,11 @@ roaming:
     end 
 
     leadSquad:          #If you're the leader, you're expected to do more!
-        set 0 0         ####################### CUSTOM SQUAD LEADER LOGIC HERE
+        ucontrol move 0 0       ####################### CUSTOM SQUAD LEADER LOGIC HERE
     end
 
     followSquad:        #Otherwise, just follow orders.
-        set 0 0         ####################### COMMAND CHANNEL LOGIC HERE
+         ucontrol move 20 0         ####################### COMMAND CHANNEL LOGIC HERE
     end
 
 
@@ -341,7 +341,7 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
 
     set SQUADADDR WMEMBUFF_OUT #set your own squad address
 
-    op sub cellSpace SQUADADDR 7000
+    op sub cellSpace SQUADADDR baseSquadMemoryAddr
     op idiv cellSpace cellSpace 64 #Calculate the correct cell space based on assigned memory location
 
     set WMEMBUFF_IN @unit   #Write your own reference in RAM as a Leader
