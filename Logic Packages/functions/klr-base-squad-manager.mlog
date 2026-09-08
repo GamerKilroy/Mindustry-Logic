@@ -39,6 +39,12 @@ continueSquadSearch:
             jump maintenanceLoop equal leaderDead true
             set reti 0
 
+            op add WMEM_ADDR squadLookupMemoryAddr 16
+            op add WMEMBUFF_IN maintCount 1
+            op add reti @counter 2
+            jump doWMEMwrite always 0 0
+            set reti 0
+
             ############## SQUAD CALCULATIONS HERE - INCLUDING WAYPOINTS!
 
         SquadNotAcceptedSearch:
@@ -50,11 +56,14 @@ end
 ##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
 
 maintenanceLoop:
+    set maintCount 0
+
     op add i squadLookupMemoryAddr 64
     op add endSergs i 64
     set newTargetLeaderAddr -1
     set selectionProtocolMax 0
     set newTargetLeaderUnit null
+    
     continueScanningSergs:
         set WMEM_ADDR i
         set reti2 reti
