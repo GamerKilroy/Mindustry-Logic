@@ -1,22 +1,22 @@
 0       @unit       Leader                              The Squad Leader
 +1      INT         SQUAD_TYPE                          The BITMASK representing the Squad's Type. Refer to SquadTypes.md
 +2      BOOL        SquadInitialized                    0 when the squad manager has not initialized the squad data yet.                      
-+3      BOOL        GCOMMAND - REGROUP                  GCOMMANDS, common for all SQUADS
-+4      BOOL        GCOMMAND - STOP
-+5      BOOL        GCOMMAND - UNUSED    
-+6      BOOL        GCOMMAND - UNUSED
-+7      BOOL        GCOMMAND - UNUSED
++3      BOOL        SquadValid                          0 when the squad is no longer valid.
++4 
++5          
++6      
++7      
 -----
-+8      UNUSED                       Currently unused
-+9      UNUSED
-+10     UNUSED
-+11     UNUSED
-+12     UNUSED
-+13     UNUSED
-+14     UNUSED
-+15     UNUSED
++8      BOOL        GCOMMAND - REGROUP                       GCOMMANDS, common for all SQUADS
++9      BOOL        GCOMMAND - STOP
++10     BOOL        GCOMMAND - UNUSED
++11     BOOL        GCOMMAND - UNUSED
++12     BOOL        GCOMMAND - UNUSED
++13     BOOL        GCOMMAND - UNUSED
++14     BOOL        GCOMMAND - UNUSED
++15     BOOL        GCOMMAND - UNUSED
 -----
-+16     UNUSED
++16     INT         MAINTENANCE COUNTER
 +17     UNUSED
 +18     UNUSED
 +19     UNUSED

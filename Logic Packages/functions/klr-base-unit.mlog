@@ -210,16 +210,16 @@ doSquadSearch: #SquadSearch function. Will look for squads with a Valid ID to jo
     set i 0
     set VALID_SQUADS 0
     continueSquadSearch:
-        op mul readAddr i 2
-        read squadNumber SQUADLOOKUP readAddr  #Read from Squad Cell each even data slot
+        op mul cellAddr i 2
+        read squadNumber SQUADLOOKUP cellAddr  #Read from Squad Cell each even data slot
 
         jump noSquadHereSearch equal squadNumber 0 #There is no squad in the slow, jump to next
         
             op and accepts squadNumber SQUADID_CAN_JOIN    #Check if you can join this squad type
 
             jump SquadNotAcceptedSearch equal accepts false #If you cannot, jump to next
-                op add thisSquadMemoryAddr readAddr 1     #Otherwise, read the Leader from RAM
-                read squadLookupMemoryAddr SQUADLOOKUP thisSquadMemoryAddr
+                op add thisSquadCellAddr cellAddr 1     #Otherwise, read the Leader from RAM
+                read squadLookupMemoryAddr SQUADLOOKUP thisSquadCellAddr
 
                 set WMEM_ADDR squadLookupMemoryAddr # #Lookup the Leader in RAM
                 set reti2 reti
@@ -248,8 +248,8 @@ doJoinSquad: #SquadJoin function. Will join the selected # squad.
     set i 0
     set squadCounter 0
     continueSquadJoin: #Iterate through squads as for squadSearch
-        op mul readAddr i 2
-        read squadNumber SQUADLOOKUP readAddr
+        op mul cellAddr i 2
+        read squadNumber SQUADLOOKUP cellAddr
 
         jump noSquadHereJoin equal squadNumber 0
         
@@ -271,7 +271,7 @@ doJoinSquad: #SquadJoin function. Will join the selected # squad.
 
     reachedJoinable: #Once you have reached the correct squad number, join it
         set aa_reachedJoinable true
-        op add squadAddrLocation readAddr 1
+        op add squadAddrLocation cellAddr 1
         read squadAddrLocation SQUADLOOKUP squadAddrLocation
 
         op add lUnitSquadAddrSaved ADDR 1
@@ -343,6 +343,14 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
 
     op sub cellSpace SQUADADDR baseSquadMemoryAddr
     op idiv cellSpace cellSpace 64 #Calculate the correct cell space based on assigned memory location
+
+    set WMEMBUFF_IN true   #Claim the memory as Valid
+    op add WMEM_ADDR SQUADADDR 3
+    set reti2 reti
+    op add reti @counter 2
+    jump doWMEMwrite always 0 0
+    set reti2 0
+    set reti reti2
 
     set WMEMBUFF_IN @unit   #Write your own reference in RAM as a Leader
     set WMEM_ADDR SQUADADDR

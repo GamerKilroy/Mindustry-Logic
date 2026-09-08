@@ -8,57 +8,116 @@ set SQUADLOOKUP cell1 #Squad Lookup Initialization
 
 set i 0
 continueSquadSearch:
-    read squadNumber SQUADLOOKUP i  #Read from Squad Cell each even data slot
+    op mul cellAddr i 2
+    read squadNumber SQUADLOOKUP cellAddr  #Read from Squad Cell each even data slot
 
     jump noSquadHereSearch equal squadNumber 0 #There is no squad in the slow, jump to next
     
-        op shr accepts  THIS_MANAGES i    #Check if you can join this squad type
-        op and accepts  accepts 0x01
+        op and accepts squadNumber THIS_MANAGES    #Check if you can join this squad type
 
         jump SquadNotAcceptedSearch equal accepts false #If you cannot, jump to next
-            op add thisSquadMemoryAddr  i 1     #Otherwise, read the Leader from RAM
-            read squadLookupMemoryAddr SQUADLOOKUP thisSquadMemoryAddr
+            op add thisSquadCellAddr cellAddr 1     #Otherwise, read the Leader from RAM
+            read squadLookupMemoryAddr SQUADLOOKUP thisSquadCellAddr
 
             set WMEM_ADDR squadLookupMemoryAddr # #Lookup the Leader in RAM
             op add reti @counter 2
             jump doWMEMread always 0 0
             set reti 0
 
-            set u_leader WMEMBUFF_OUT # Check if the leader is alive
-            sensor isLeaderDead u_leader @dead
-            jump leaderDead equal isLeaderDead true
-
-            op add WMEM_ADDR thisSquadMemoryAddr 2   #Check if squad is already initialized
+            set u_leader WMEMBUFF_OUT # Find the leader position and range
+            sensor leaderDead u_leader @dead
+            
+            op add WMEM_ADDR squadLookupMemoryAddr 16
             op add reti @counter 2
             jump doWMEMread always 0 0
             set reti 0
 
-            jump squadAlreadyInitialized equal WMEMBUFF_OUT true #Initialize the squad
+            set maintCount WMEMBUFF_OUT
 
-                op add WMEM_ADDR thisSquadMemoryAddr 2   #Just set init to true, for now no extra logic here but open for expansion
-                set WMEMBUFF_IN true
-                op add reti @counter 2
-                jump doWMEMwrite always 0 0
-                set reti 0
+            op add reti @counter 3
+            jump maintenanceLoop greaterThan maintCount 60
+            jump maintenanceLoop equal leaderDead true
+            set reti 0
 
-            squadAlreadyInitialized:
+            ############## SQUAD CALCULATIONS HERE - INCLUDING WAYPOINTS!
 
-            sensor leader_x u_leader @x     #Sensor the leader's position
-            sensor leader_y u_leader @y 
+        SquadNotAcceptedSearch:
+    noSquadHereSearch:
+    op add i  i 1
+jump continueSquadSearch lessThan i 32 #Loop through all 32 squads.
+end
 
-            
+##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
 
+maintenanceLoop:
+    op add i squadLookupMemoryAddr 64
+    op add endSergs i 64
+    set newTargetLeaderAddr -1
+    set selectionProtocolMax 0
+    set newTargetLeaderUnit null
+    continueScanningSergs:
+        set WMEM_ADDR i
+        set reti2 reti
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti2 0
+        set reti reti2
 
+        set currSerg WMEMBUFF_OUT
+
+        ############## DYNAMIC LEADER SELECTION RULES HERE
 
         
 
-        SquadNotAcceptedSearch:
-        leaderDead:
-    noSquadHereSearch:
-    op add i  i 2
-jump continueSquadSearch lessThan i 64 #Loop through all 32 squads.
 
-##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
+    jump continueScanningSergs lessThan i endSergs
+
+    jump noValidLeader equal newTargetLeader -1
+
+    set preservedLeader null
+    jump dontPreserveLeader equal leaderDead true
+        set WMEM_ADDR squadLookupMemoryAddr
+        set reti2 reti
+        op add reti @counter 2
+        jump doWMEMwrite always 0 0
+        set reti2 0
+        set reti reti2
+
+        set preservedLeader WMEMBUFF_OUT
+    dontPreserveLeader:
+
+    set WMEMADDR squadLookupMemoryAddr
+    set WMEMBUFF_IN newTargetLeaderUnit 
+    set WMEM_ADDR squadLookupMemoryAddr
+    set reti2 reti
+    op add reti @counter 2
+    jump doWMEMwrite always 0 0
+    set reti2 0
+    set reti reti2
+
+    set WMEMADDR newTargetLeaderAddr
+    set WMEMBUFF_IN preservedLeader
+
+    set reti2 reti
+    op add reti @counter 2
+    jump doWMEMwrite always 0 0
+    set reti2 0
+    set reti reti2
+
+    set @counter reti
+
+
+    noValidLeader:
+    op add WMEM_ADDR squadLookupMemoryAddr 3
+    set WMEMBUFF_IN false
+    set reti2 reti
+    op add reti @counter 2
+    jump doWMEMwrite always 0 0
+    set reti2 0
+    set reti reti2
+
+set @counter reti
+
 doWMEMread: #WMEM Read - Read from RAM Address
     waitForReadyRead:
     read isBusy WMEM "isBusy"
@@ -121,5 +180,3 @@ doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR b
     waitACKMalloc: ; jump waitACKMalloc equal ramACK 0
     set ramACK 0
 set @counter reti
-
-    
