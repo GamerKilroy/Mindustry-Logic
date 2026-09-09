@@ -279,7 +279,7 @@ free:
         sensor vnameforrom vnameforromblock @name 
         read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
         write null RAMref actualvarname
-        op add i 1
+        op add i i 1
         jump continueFree lessThan i freeSize
    
     #write 1 ACKtarget "ramACK"

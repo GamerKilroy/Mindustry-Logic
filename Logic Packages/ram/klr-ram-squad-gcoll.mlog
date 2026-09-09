@@ -1,35 +1,36 @@
 # Unit Table garbage collector. wProc running at low intensity, scanning Dynamic Memory for units
 # Read or Write requests get in via remote commands write to the following variable:
 
-set baseUnitMemoryAddr 1000 #BASE Dynamic Memory Parameters
-set baseUnitMemoryLen 3900
-set baseSquadMemoryAddr 7000
-set baseSquadMemoryLen 3700
+set WMEM processor1   #RAM Initialization - Do not touch
+draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
+read baseSquadMemoryAddr WMEM "baseSquadMemoryAddr"
+read baseSquadMemoryLen WMEM "baseSquadMemoryLen"
 
-set currPointer baseSquadMemoryAddr # Start the pointer for the start of memory
+jump noValidInit equal WMEM 0
+jump noValidInit equal baseSquadMemoryAddr 0
+jump noValidInit equal baseSquadMemoryLen 0
 
-op add reti @counter 1 #INIT function call
-jump doInit always 0 0
-
-op equal parity RAMLOOKUP false #Verify integrity, if false reboot
-op add parity parity ROMLOOKUP
-jump noValidInit notEqual parity null
+set currPointer baseSquadMemoryAddr
+op add maxSquadMemory baseSquadMemoryAddr baseSquadMemoryLen
 
 continueGC: #Repeat until end of memory
 
-    set addr currPointer #Read @dead from currently pointed squad
-    op add addr addr 4
+    set WMEM_ADDR currPointer #Read @dead from currently pointed unit
     op add reti @counter 1
-    jump memread always 0 0
-    sensor isAlive WMEMreturn @dead
-    jump isValid equal isAlive true
+    jump doWMEMread always 0 0
+    jump isValid equal WMEMBUFF_OUT null
+    op add WMEM_ADDR currPointer 3
+    op add reti @counter 1
+    jump doWMEMread always 0 0
+    jump isValid equal WMEMBUFF_OUT true
 
-    op add reti @counter 1 #If squad is dead, delete that memory
-    jump memdel always 0 0
+    set WMEMBUFF_LEN 128
+    op add reti @counter 1 #If unit is dead, delete that memory
+    jump doWMEMfree always 0 0
 
     isValid:
-
-    op add currPointer currPointer 128 #Get the next squad slot, then iterate
+    
+    op add currPointer currPointer 128 #Get the next unit slot, then iterate
     jump continueGC lessThan currPointer maxSquadMemory
 
 
@@ -39,63 +40,49 @@ end
 
 #Functions below
 
-doInit: #Link to RAMLOOKUP and ROMLOOKUP, as well as calculating max memory areas.
-    set RAMLOOKUP processor1
-    read maxRAM RAMLOOKUP maxRAM
-    set ROMLOOKUP processor2
-    set unitMemoryPointer baseUnitMemoryAddr
-    op add maxUnitMemory unitMemoryPointer baseUnitMemoryAddr
-    set squadMemoryPointer baseSquadMemoryAddr
-    op add maxSquadMemory squadMemoryPointer baseSquadMemoryLen
-    set @counter reti
+doWMEMread: #WMEM Read - Read from RAM Address
+    waitForReadyRead:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyRead equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyRead equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write 1 WMEM "req"
+    waitACKRead: ; jump waitACKRead equal ramACK 0
+    set ramACK 0
+set @counter reti
 
-memread: #Delete 16 vars from memory, in sequence from addr.
-    setrate 500
-    op mod ramvnameidx addr 6000 #Get the memory address IN the ram
-    op idiv ramprocidx addr 6000 #Get the number of the memory bank
-    lookup block vname ramprocidx #Lookup to convert to String + Name
-    sensor vname vname @name
-    read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
-    op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
-    lookup block vname romprocidx #Lookup to convert to String + Name
-    sensor vname vname @name
-    read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
-    op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
-    lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
-    sensor vnameforrom vnameforromblock @name 
-    read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
-    read value RAMref actualvarname #Read from RAM the Variable Value
+doWMEMwrite: #WMEM Write - Write to RAM Address
+    waitForReadyWrite:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyWrite equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyWrite equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write 2 WMEM "req"
+    waitACKWrite: ; jump waitACKWrite equal ramACK 0
+    set ramACK 0
+set @counter reti
 
-    set WMEMreturn value
+doWMEMfree: #WMEM Free Memory - Clean Vars from starting ADDR
 
-    set @counter reti
-end
-
-memdel:
-    setrate 500
-
-    op add endOfSquad addr 128
-
-    continueDel:
-
-        op mod ramvnameidx addr 6000 #Get the memory address IN the ram
-        op idiv ramprocidx addr 6000 #Get the number of the memory bank
-        lookup block vname ramprocidx #Lookup to convert to String + Name
-        sensor vname vname @name
-        read RAMref RAMLOOKUP vname #From the Processor RAMLOOKUP, obtain a Link to the memory holder
-        op idiv romprocidx ramvnameidx 261 #Once you know the bank, find the correct ROM storage for said location.
-        lookup block vname romprocidx #Lookup to convert to String + Name
-        sensor vname vname @name
-        read ROMref ROMLOOKUP vname #From the Processor ROMLOOKUP, obtain a Link to the correct ROM bank.
-        op mod vnameidxinrom ramvnameidx 261 #Obtain the specific position in the ROM table.
-        lookup block vnameforromblock vnameidxinrom #Lookup to convert to String
-        sensor vnameforrom vnameforromblock @name 
-        read actualvarname ROMref vnameforrom #Read from ROM the proper variable name in RAM.
-        write null RAMref actualvarname #Read from RAM the Variable Value
-
-        op add addr addr 1
-        jump continueDel lessThan addr endOfSquad
-
-    set WMEMreturn 0
-    set @counter reti
-end
+    waitForReadyFree:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyFree equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyFree equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write WMEMBUFF_LEN WMEM "reqLen"
+    write 11 WMEM "req"
+    waitACKFree: ; jump waitACKFree equal ramACK 0
+    set ramACK 0
+set @counter reti
