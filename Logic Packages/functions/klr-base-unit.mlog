@@ -134,11 +134,20 @@ roaming:
     end 
 
     leadSquad:          #If you're the leader, you're expected to do more!
-        ucontrol move 80 90       ####################### CUSTOM SQUAD LEADER LOGIC HERE
+        ucontrol move 90 90       ####################### CUSTOM SQUAD LEADER LOGIC HERE
     end
 
     followSquad:        #Otherwise, just follow orders.
-         ucontrol move 90 90        ####################### COMMAND CHANNEL LOGIC HERE
+                ####################### COMMAND CHANNEL LOGIC HERE
+        set WMEM_ADDR SQUADADDR
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        sensor leaderX WMEMBUFF_OUT @x
+        sensor leaderY WMEMBUFF_OUT @y
+        ucontrol approach leaderX leaderY 1
+
     end
 
 
@@ -277,8 +286,8 @@ doJoinSquad: #SquadJoin function. Will join the selected # squad.
         op add lUnitSquadAddrSaved ADDR 1
         set WMEM_ADDR lUnitSquadAddrSaved
         set WMEMBUFF_IN squadAddrLocation
-
-        set reti2 reti   #And save it's location in RAM in your unit memory space
+    
+        set reti2 reti   #And save squad location in RAM in your unit memory space
         op add reti @counter 2
         jump doWMEMwrite always 0 0
         set reti2 0
@@ -575,12 +584,10 @@ squadProcedure:  #Special "FUNCTION" that will manage squad search join and crea
             jump onlyOneValid equal VALID_SQUADS 1 # If there is only one, then join that
                 op div scale  1 VALID_SQUADS       # Otherwise roll for which one to join
                 op rand RNGroll 1
-                op div RNGroll scale 
-                op floor RNGroll RNGroll 0
+                op div squadToJoin RNGroll scale 
+                op floor squadToJoin squadToJoin 0
 
                 set aa_RNGroll true
-
-                set squadToJoin RNGroll
 
             onlyOneValid:
 

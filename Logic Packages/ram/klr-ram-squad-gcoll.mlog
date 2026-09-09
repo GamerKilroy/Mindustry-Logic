@@ -1,5 +1,6 @@
 # Unit Table garbage collector. wProc running at low intensity, scanning Dynamic Memory for units
 # Read or Write requests get in via remote commands write to the following variable:
+setrate 500
 
 set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
@@ -29,7 +30,7 @@ continueGC: #Repeat until end of memory
     jump doWMEMfree always 0 0
 
     isValid:
-    
+
     op add currPointer currPointer 128 #Get the next unit slot, then iterate
     jump continueGC lessThan currPointer maxSquadMemory
 

@@ -38,6 +38,7 @@ continueSquadSearch:
             jump maintenanceLoop greaterThan maintCount 20
             jump maintenanceLoop equal leaderDead true
             set reti 0
+            setrate 500
 
             op add WMEM_ADDR squadLookupMemoryAddr 16
             op add WMEMBUFF_IN maintCount 1
@@ -56,6 +57,7 @@ end
 ##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
 
 maintenanceLoop:
+    setrate 1000
     set maintCount 0
 
     op add aa_debugcycle aa_debugcycle 1
