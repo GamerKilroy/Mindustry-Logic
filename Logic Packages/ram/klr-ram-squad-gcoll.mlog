@@ -25,6 +25,7 @@ continueGC: #Repeat until end of memory
     jump doWMEMread always 0 0
     jump isValid equal WMEMBUFF_OUT true
 
+    set WMEM_ADDR currPointer
     set WMEMBUFF_LEN 128
     op add reti @counter 1 #If unit is dead, delete that memory
     jump doWMEMfree always 0 0
