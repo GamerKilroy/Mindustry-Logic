@@ -1,6 +1,6 @@
 # Manages the gamestate, initializes waypoints, requests cutscenes and more.
 
-setrate 200
+setrate 500
 set WMEM processor1 # Link to ram
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
@@ -15,8 +15,13 @@ jump noCyclic equal @second lastSecond #1Hz Rising Edge
     set lastsecond @second
     jump endCyclic always 0 0
 noCyclic:
-    set fp1hz false
-endCyclic:
+
+jump noNewWave equal @waveNumber lastWaveNumber #Wave Change Rising Edge
+    op add reti @counter 1
+    jump cyclicNewWave always 0 0 
+    set lastWaveNumber @waveNumber
+    jump endWave always 0 0
+endWave:
 
 op add reti @counter 1
 jump manageTouch always 0 0
@@ -24,16 +29,9 @@ jump manageTouch always 0 0
 op add reti @counter 1
 jump drawScreen always 0 0
 
-op add reti @counter 1
 jump gameInit equal gamestate 0 #Write all INIT data to ROM
-
-op add reti @counter 1
 jump beforeGameStart equal gamestate 1 #Difficulty selection & Game Start
-
-op add reti @counter 1
-jump runningConfig equal gamestate 1 #Load difficulty data to RAM
-
-op add reti @counter 1
+jump runningConfig equal gamestate 2 #Load difficulty data to RAM
 jump gameStarted equal gamestate 3 #Gametime checks
 
 end
@@ -44,31 +42,23 @@ gameInit:
 
     set WMEM_ADDR 8
     set WMEMBUFF_IN baseUnitMemoryAddr
-    set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0
-    set reti retiMem
 
     set WMEM_ADDR 9
     set WMEMBUFF_IN baseUnitMemoryLen
-    set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0
-    set reti retiMem
 
     set WMEM_ADDR 10
     set WMEMBUFF_IN baseSquadMemoryAddr
-    set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0
-    set reti retiMem
 
     set WMEM_ADDR 11
     set WMEMBUFF_IN baseSquadMemoryLen
-    set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0
-    set reti retiMem
 
     set retiMem reti
     op add reti @counter 1
@@ -77,13 +67,9 @@ gameInit:
 
     set WMEM_ADDR 0
     set WMEMBUFF_IN true
-    set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0
-    set reti retiMem
-
     set gamestate 1
-    set @counter reti
 
 beforeGameStart:
     op floor secMod @second
@@ -103,107 +89,12 @@ beforeGameStart:
         jump textDone always 0 0
 
     textDone:
-    set @counter reti
+    end
 
 runningConfig:
 
-    set WMEM_ADDR 70
-    set WMEMBUFF_IN @nova
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 71
-    set WMEMBUFF_IN @flare
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-    
     set WMEM_ADDR 50
-    set WMEMBUFF_IN @dagger
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 51
-    set WMEMBUFF_IN @horizon
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 52
-    set WMEMBUFF_IN @dp-klr-pulsar-sh
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    jump doneConfig equal gameDifficulty 0
-
-    set WMEM_ADDR 72
-    set WMEMBUFF_IN @dp-klr-spiroct-cr
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 53
-    set WMEMBUFF_IN @dp-klr-mace-lr
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 54
-    set WMEMBUFF_IN @fortress
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 55
-    set WMEMBUFF_IN @dp-klr-mega-ds
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 56
-    set WMEMBUFF_IN @dp-klr-spiroct-cc
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 57
-    set WMEMBUFF_IN @dp-klr-atrax-cc
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    jump doneConfig equal gameDifficulty 1
-
-    set WMEM_ADDR 58
-    set WMEMBUFF_IN @dp-klr-flare-ic
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 58
-    set WMEMBUFF_IN @dp-klr-zenith-ic
-    set retiMem reti
-    op add reti @counter 1
-    jump doWMEMwrite always 0 0
-    set reti retiMem
-
-    set WMEM_ADDR 59
-    set WMEMBUFF_IN @dp-klr-fortress-bwl
+    set WMEMBUFF_IN @nova
     set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0
@@ -211,10 +102,9 @@ runningConfig:
 
     doneConfig:
     set gamestate 3
-    set @counter reti
 
 gameStarted:
-    set @counter reti
+    end
 
 resetPointers:
     write baseUnitMemoryAddr cell1 1
@@ -360,30 +250,43 @@ manageTouch:
         jump mediumDifficultyChange lessThan pixTouchX 40
         jump hardDifficultyChange lessThan pixTouchX 60
         jump eradDifficultyChange lessThan pixTouchX 80
+        jump runicDifficultyChange greaterThan pixTouchX 200
 
 
         easyDifficultyChange:
             set gameDifficulty 0
-            print "[#00ff00]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. Little extra enemy spawns. "
-            message toast 2
+            print "[#009999]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. Little extra enemy spawns. "
+            message toast 4
             jump doneDifficultyChange always 0 0
 
         mediumDifficultyChange:
             set gameDifficulty 1
-            print "[#CCCC00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Standard extra enemy spawns."
-            message toast 2
+            print "[#00FF00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Standard extra enemy spawns."
+            message toast 4
             jump doneDifficultyChange always 0 0
 
         hardDifficultyChange:
             set gameDifficulty 2
-            print "[#FF0000]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
-            message toast 2
+            print "[#999900]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
+            message toast 4
             jump doneDifficultyChange always 0 0
 
         eradDifficultyChange:
             set gameDifficulty 3
-            print "[#FF00FF]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and do not respect wave timer. Guardians are much tougher and have even more mechanics"
-            message toast 2
+            print "[#FF0000]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and do not respect wave timer. Guardians are much tougher and have even more mechanics"
+            message toast 4
+            jump doneDifficultyChange always 0 0
+
+        runicDifficultyChange:
+            op add runicTicks runicTicks 1
+            jump notEnoughRunicTicks lessThan runicTicks 3
+                set gameDifficulty 4
+                print "[#990099] ᑽᒀᑹᑳᑩ DIFFICULTY DISCOVERED. [#ffffff]Good luck."
+                message toast 4
+                jump doneDifficultyChange always 0 0
+            notEnoughRunicTicks:
+            print "Click..."
+            message toast 1
             jump doneDifficultyChange always 0 0
 
     notDifficultyInput:
@@ -393,4 +296,7 @@ manageTouch:
 set @counter reti
 
 cyclic1Hz:
+set @counter reti
+
+cyclicNewWave:
 set @counter reti
