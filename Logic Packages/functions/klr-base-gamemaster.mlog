@@ -250,7 +250,7 @@ manageTouch:
         jump mediumDifficultyChange lessThan pixTouchX 40
         jump hardDifficultyChange lessThan pixTouchX 60
         jump eradDifficultyChange lessThan pixTouchX 80
-        jump runicDifficultyChange greaterThan pixTouchX 200
+        jump runicDifficultyChange lessThan pixTouchX 200
 
 
         easyDifficultyChange:
@@ -278,6 +278,7 @@ manageTouch:
             jump doneDifficultyChange always 0 0
 
         runicDifficultyChange:
+            jump runicDifficultyChange greaterThan pixTouchX 180
             op add runicTicks runicTicks 1
             jump notEnoughRunicTicks lessThan runicTicks 3
                 set gameDifficulty 4
