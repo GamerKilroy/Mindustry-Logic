@@ -22,6 +22,7 @@
 # isBusy is set to true whenever the RAM is in the middle of writing or reading.
 # Will be automatically set to false when the current operation is done.
 
+setrate 1000
 draw triangle ACKtarget lastACKtarget p1 p2 p3 p4
 
 jump doInit equal doneInit 0
@@ -97,7 +98,6 @@ doReset:
 
 memread:
     set isBusy true #Set processor as busy
-    setrate 500
     op mod ramvnameidx addr 6000 #Get the memory address IN the ram
     op idiv ramprocidx addr 6000 #Get the number of the memory bank
     lookup block vname ramprocidx #Lookup to convert to String + Name
@@ -121,7 +121,6 @@ end
 
 memwrite:
     set isBusy true #Set processor as busy
-    setrate 500
     op mod ramvnameidx addr 6000 #Get the memory address IN the ram
     op idiv ramprocidx addr 6000 #Get the number of the memory bank
     lookup block vname ramprocidx #Lookup to convert to String + Name
@@ -148,7 +147,6 @@ end
 memlookup:
     set isBusy true
     set i 0
-    setrate 500
     continueLookup:
         op mod ramvnameidx i 6000 #Get the memory address IN the ram
         op idiv ramprocidx i 6000 #Get the number of the memory bank
@@ -182,7 +180,6 @@ memlookuptarget:
     set isBusy true
     set i addr
     op add maxLookup addr reqLen
-    setrate 500
     continueLookupTarget:
         op mod ramvnameidx i 6000 #Get the memory address IN the ram
         op idiv ramprocidx i 6000 #Get the number of the memory bank
@@ -263,7 +260,6 @@ free:
     set isBusy true
     set i addr
     op add freeSize addr reqLen
-    setrate 500
     continueFree:
         op mod ramvnameidx i 6000 #Get the memory address IN the ram
         op idiv ramprocidx i 6000 #Get the number of the memory bank
@@ -290,7 +286,6 @@ end
 fullReset:
     set isBusy true
     set i 0
-    setrate 500
     continueFullReset:
         op mod ramvnameidx i 6000 #Get the memory address IN the ram
         op idiv ramprocidx i 6000 #Get the number of the memory bank
@@ -317,7 +312,6 @@ end
 memread_reti:
     set addr WMEM_ADDR
     set isBusy true #Set processor as busy
-    setrate 500
     op mod ramvnameidx addr 6000 #Get the memory address IN the ram
     op idiv ramprocidx addr 6000 #Get the number of the memory bank
     lookup block vname ramprocidx #Lookup to convert to String + Name

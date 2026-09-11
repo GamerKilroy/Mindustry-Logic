@@ -1,4 +1,4 @@
-setrate 500
+setrate 1000
 set THIS_MANAGES 0x0001    #The Squad ID that's managed by this wProc
 
 set WMEM processor1   #RAM Initialization - Do not touch
