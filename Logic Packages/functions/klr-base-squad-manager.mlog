@@ -178,6 +178,7 @@ maintenanceLoop:
 
     noValidLeader:
 
+    jump squadStillValid equal leaderDead false
     set aa_noSerg_1 true
     op add WMEM_ADDR squadLookupMemoryAddr 3
     set WMEMBUFF_IN false
@@ -187,6 +188,8 @@ maintenanceLoop:
     jump doWMEMwrite always 0 0
     set reti2 0
     set reti reti2
+
+    squadStillValid:
 
     op add aa_noSerg_done aa_noSerg_done 1
 
