@@ -24,6 +24,9 @@ jump noNewWave equal @waveNumber lastWaveNumber #Wave Change Rising Edge
 endWave:
 
 op add reti @counter 1
+jump resetPointer equal doResetPointers true
+
+op add reti @counter 1
 jump manageTouch always 0 0
 
 op add reti @counter 1
@@ -39,6 +42,8 @@ end
 gameInit:
 
     set gameDifficulty 1
+
+    setrule unitBuildSpeed 0
 
     set WMEM_ADDR 8
     set WMEMBUFF_IN baseUnitMemoryAddr
@@ -60,16 +65,15 @@ gameInit:
     op add reti @counter 1
     jump doWMEMwrite always 0 0
 
-    set retiMem reti
     op add reti @counter 1
     jump resetPointers always 0 0
-    set reti retiMem
 
     set WMEM_ADDR 0
     set WMEMBUFF_IN true
     op add reti @counter 1
     jump doWMEMwrite always 0 0
     set gamestate 1
+    end
 
 beforeGameStart:
     op floor secMod @second
@@ -95,16 +99,22 @@ runningConfig:
 
     set WMEM_ADDR 50
     set WMEMBUFF_IN @nova
-    set retiMem reti
     op add reti @counter 1
     jump doWMEMwrite always 0 0
-    set reti retiMem
+
+    jump doneConfig equal gameDifficulty 0 # Below for Normal and above
+    jump doneConfig equal gameDifficulty 1 # Below for Hard and above
+    jump doneConfig equal gameDifficulty 2 # Below for Erad and above
+    jump doneConfig equal gameDifficulty 3 # Below for RUNIC
 
     doneConfig:
+
+    setrule unitBuildSpeed 1
     set gamestate 3
+end
 
 gameStarted:
-    end
+end
 
 resetPointers:
     write baseUnitMemoryAddr cell1 1
@@ -182,6 +192,11 @@ drawScreen:
     draw col COLOR_SELECTED
     draw line 0 80 80 80
 
+    draw stroke 2
+    draw lineRect 5 75 5 35
+    print "START"
+    draw print 40 20 @center
+
     drawflush display1
 set @counter reti
 
@@ -242,7 +257,7 @@ manageTouch:
 
     jump noTouchInput equal FPshoot false
 
-        jump notDifficultyInput greaterThan pixTouchY 70
+        jump notDifficultyInput greaterThan pixTouchY 75
         jump notDifficultyInput lessThan pixTouchY 40
 
         jump noTouchInput lessThan pixTouchX 0
@@ -292,11 +307,25 @@ manageTouch:
 
     notDifficultyInput:
     doneDifficultyChange:
+
+        jump notStartInput greaterThan pixTouchY 40
+        jump notStartInput lessThan pixTouchY 3
+        jump notStartInput greaterThan pixTouchX 75
+        jump notStartInput lessThan pixTouchX 5
+
+        set gamestate 2
+
+    notStartInput:
     noTouchInput:
 
 set @counter reti
 
 cyclic1Hz:
+    sensor managedTeam @this @team
+    fetch @unitCount activeUnits managedTeam 0 0
+    op doResetPointers equal activeUnits 0
+
+
 set @counter reti
 
 cyclicNewWave:
