@@ -9,6 +9,9 @@ set baseUnitMemoryLen 5500
 set baseSquadMemoryAddr 7000
 set baseSquadMemoryLen 13000
 
+op sub unitHeapTotal baseUnitMemoryLen baseUnitMemoryAddr
+op sub squadHeapTotal baseSquadMemoryLen baseSquadMemoryAddr
+
 jump noCyclic equal @second lastSecond #1Hz Rising Edge
     op add reti @counter 1
     jump cyclic1Hz always 0 0
@@ -84,15 +87,15 @@ beforeGameStart:
     mission1text:
         print "Wave timer inactive"
         message mission 1
-        jump textDone always 0 0 
+        jump textDoneBGS always 0 0 
         
 
     mission2text:
         print "Select difficulty and START"
         message mission 1
-        jump textDone always 0 0
+        jump textDoneBGS always 0 0
 
-    textDone:
+    textDoneBGS:
     end
 
 runningConfig:
@@ -111,14 +114,40 @@ runningConfig:
 
     setrule unitBuildSpeed 1
     set gamestate 3
+    setProp @health display1 0
+    print "Configuration data written. Game is starting, have fun!"
+    message toast 4
 end
 
 gameStarted:
+
+    op mod secToNext @waveTime 60
+    op idiv minToNext @waveTime 60
+
+    print "[#CCCCCC]Next Wave: {0}:{1}s\n"
+
+    read currUnitHeapHead cell1 1
+    read currSquadHeapHead cell1 3
+
+    op sub currUnitHeapHead currUnitHeapHead baseUnitMemoryAddr
+    op sub currSquadHeapHead currSquadHeapHead baseSquadMemoryAddr
+    op div unitMemoryUsage currUnitHeapHead unitHeapTotal
+    op div squadMemoryUsage currSquadHeapHead squadHeapTotal
+
+    print "[#00CC00]Unit Memory: {2}%\n"
+    print "[#0000CC]Squad Memory: {3}%\n"
+
+    format minToNext
+    format secToNext
+    format unitMemoryUsage
+    format squadMemoryUsage
+    
 end
 
 resetPointers:
     write baseUnitMemoryAddr cell1 1
     write baseSquadMemoryAddr cell1 3
+    set doResetPointers equal false
 set @counter reti
 
 drawScreen:
@@ -329,4 +358,5 @@ cyclic1Hz:
 set @counter reti
 
 cyclicNewWave:
+    set doResetPointers equal true
 set @counter reti
