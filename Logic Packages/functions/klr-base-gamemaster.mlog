@@ -278,7 +278,7 @@ manageTouch:
             jump doneDifficultyChange always 0 0
 
         runicDifficultyChange:
-            jump notDifficultyInput greaterThan pixTouchX 180
+            jump notDifficultyInput greaterThan pixTouchX 220
             op add runicTicks runicTicks 1
             jump notEnoughRunicTicks lessThan runicTicks 3
                 set gameDifficulty 4
