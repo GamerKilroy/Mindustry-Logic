@@ -4,6 +4,8 @@ setrate 500
 set WMEM processor1 # Link to ram
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
+sensor managedTeam @this @team
+
 set baseUnitMemoryAddr 1000 #Base memory addresses for stack pointer refresh
 set baseUnitMemoryLen 5500
 set baseSquadMemoryAddr 7000
@@ -16,18 +18,16 @@ jump noCyclic equal @second lastSecond #1Hz Rising Edge
     op add reti @counter 1
     jump cyclic1Hz always 0 0
     set lastsecond @second
-    jump endCyclic always 0 0
 noCyclic:
 
 jump noNewWave equal @waveNumber lastWaveNumber #Wave Change Rising Edge
     op add reti @counter 1
     jump cyclicNewWave always 0 0 
     set lastWaveNumber @waveNumber
-    jump endWave always 0 0
-endWave:
+noNewWave:
 
 op add reti @counter 1
-jump resetPointer equal doResetPointers true
+jump resetPointers equal doResetPointers true
 
 op add reti @counter 1
 jump manageTouch always 0 0
@@ -46,7 +46,7 @@ gameInit:
 
     set gameDifficulty 1
 
-    setrule unitBuildSpeed 0
+    setrule buildSpeed -1 managedTeam
 
     set WMEM_ADDR 8
     set WMEMBUFF_IN baseUnitMemoryAddr
@@ -79,6 +79,7 @@ gameInit:
     end
 
 beforeGameStart:
+    setrule buildSpeed 0 managedTeam
     op floor secMod @second
     op mod secMod secMod 2
     jump mission1text equal secMod 0
@@ -112,9 +113,9 @@ runningConfig:
 
     doneConfig:
 
-    setrule unitBuildSpeed 1
+    setrule buildSpeed 1 managedTeam
     set gamestate 3
-    setProp @health display1 0
+    setprop @health display1 0
     print "Configuration data written. Game is starting, have fun!"
     message toast 4
 end
@@ -141,6 +142,8 @@ gameStarted:
     format secToNext
     format unitMemoryUsage
     format squadMemoryUsage
+
+    message mission 1
     
 end
 
@@ -152,27 +155,48 @@ set @counter reti
 
 drawScreen:
 
-    packcolor GREEN_BRIGHT 0 1 0 1
-    packcolor GREEN_DARK 0 1 0 0.2
+    packcolor GREEN_BRIGHT 0 1 0.8 1
+    packcolor GREEN_DARK 0 1 0.8 0.2
 
-    packcolor YELLOW_BRIGHT 1 0.7 0 1
-    packcolor YELLOW_DARK 1 0.7 0 0.2
+    packcolor YELLOW_BRIGHT 0 1 0 1
+    packcolor YELLOW_DARK 0 1 0 0.2
 
-    packcolor RED_BRIGHT 1 0 0 1
-    packcolor RED_DARK 1 0 0 0.2
+    packcolor RED_BRIGHT 0.8 0.8 0 1
+    packcolor RED_DARK 0.8 0.8 0 0.2
 
-    packcolor PURPLE_BRIGHT 1 0 0.7 1
-    packcolor PURPLE_DARK 1 0 0.7 0.2
+    packcolor PURPLE_BRIGHT 1 0 0 1
+    packcolor PURPLE_DARK 1 0 0 0.2
+
+    packcolor RUNIC_BANNER 1 0 1 1
 
     packcolor IS_SELECTED 1 1 1 0.5
 
-    draw clear 50 50 50
+    draw clear 20 20 20
+    jump noRunicBG notEqual gameDifficulty 4
+    draw clear 70 10 30
+    draw stroke 5
+    draw color 110 15 40
+    draw line 13 0 13 80
+    draw line 18 0 18 80
+    draw line 30 0 30 80
+    draw line 48 0 48 80
+    draw line 70 0 70 80
+    draw stroke 2
+    draw color 50 15 90
+    draw line 17 0 17 80
+    draw line 55 0 55 80
+    draw stroke 4
+    draw line 65 0 65 80
+    packcolor COLOR_SELECTED 150 150 150 1
+    noRunicBG:
     draw stroke 2
     draw color 0 0 0 255
-    draw linerect 0 0 176 176
+
+    
 
     draw col GREEN_DARK
     jump easyColorNotSelected notEqual gameDifficulty 0
+        jump easyColorNotSelected equal gameDifficulty 4
         set COLOR_SELECTED GREEN_BRIGHT
         draw col IS_SELECTED
     easyColorNotSelected:
@@ -183,6 +207,7 @@ drawScreen:
 
     draw col YELLOW_DARK
     jump normalColorNotSelected notEqual gameDifficulty 1
+        jump normalColorNotSelected equal gameDifficulty 4
         set COLOR_SELECTED YELLOW_BRIGHT
         draw col IS_SELECTED
     normalColorNotSelected:
@@ -194,6 +219,7 @@ drawScreen:
 
     draw col RED_DARK
     jump hardColorNotSelected notEqual gameDifficulty 2
+        jump hardColorNotSelected equal gameDifficulty 4
         set COLOR_SELECTED RED_BRIGHT
         draw col IS_SELECTED
     hardColorNotSelected:
@@ -206,6 +232,7 @@ drawScreen:
 
     draw col PURPLE_DARK
     jump eradColorNotSelected notEqual gameDifficulty 3
+        jump eradColorNotSelected equal gameDifficulty 4
         set COLOR_SELECTED PURPLE_BRIGHT
         draw col IS_SELECTED
     eradColorNotSelected:
@@ -217,14 +244,27 @@ drawScreen:
     #draw line 136 96 154 154
     #draw line 126 160 156 90
 
-    draw stroke 20
-    draw col COLOR_SELECTED
-    draw line 0 80 80 80
+    jump skipBanner equal gameDifficulty 4
+        draw stroke 20
+        draw col COLOR_SELECTED
+        draw line 0 80 80 80
+    skipBanner:
 
+    draw col COLOR_SELECTED
     draw stroke 2
-    draw lineRect 5 75 5 35
+    draw lineRect 7 7 65 26
     print "START"
-    draw print 40 20 @center
+    draw print 38 22 @center
+    draw col 80 80 80
+    draw rect 7 7 65 26
+
+    jump noRunicFG notEqual gameDifficulty 4
+        draw stroke 20
+        draw color 255 0 255
+        draw line 40 20 20 20
+        draw line 20 20 20 40
+        draw line 40 60 60 60
+    noRunicFG:
 
     drawflush display1
 set @counter reti
@@ -286,39 +326,40 @@ manageTouch:
 
     jump noTouchInput equal FPshoot false
 
-        jump notDifficultyInput greaterThan pixTouchY 75
-        jump notDifficultyInput lessThan pixTouchY 40
+        jump notDifficultyInput greaterThan pixTouchY 60
+        jump notDifficultyInput lessThan pixTouchY 37
 
         jump noTouchInput lessThan pixTouchX 0
-        jump easyDifficultyChange lessThan pixTouchX 20
-        jump mediumDifficultyChange lessThan pixTouchX 40
-        jump hardDifficultyChange lessThan pixTouchX 60
-        jump eradDifficultyChange lessThan pixTouchX 80
-        jump runicDifficultyChange lessThan pixTouchX 200
+        jump easyDifficultyChange lessThan pixTouchX 17
+        jump mediumDifficultyChange lessThan pixTouchX 35
+        jump hardDifficultyChange lessThan pixTouchX 53
+        jump eradDifficultyChange lessThan pixTouchX 70
+        jump runicDifficultyChange greaterThan pixTouchX 200
+        jump notDifficultyInput always 0 0
 
 
         easyDifficultyChange:
             set gameDifficulty 0
             print "[#009999]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. Little extra enemy spawns. "
-            message toast 4
+            message toast 2
             jump doneDifficultyChange always 0 0
 
         mediumDifficultyChange:
             set gameDifficulty 1
             print "[#00FF00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Standard extra enemy spawns."
-            message toast 4
+            message toast 2
             jump doneDifficultyChange always 0 0
 
         hardDifficultyChange:
             set gameDifficulty 2
             print "[#999900]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
-            message toast 4
+            message toast 2
             jump doneDifficultyChange always 0 0
 
         eradDifficultyChange:
             set gameDifficulty 3
             print "[#FF0000]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and do not respect wave timer. Guardians are much tougher and have even more mechanics"
-            message toast 4
+            message toast 3
             jump doneDifficultyChange always 0 0
 
         runicDifficultyChange:
@@ -326,6 +367,7 @@ manageTouch:
             op add runicTicks runicTicks 1
             jump notEnoughRunicTicks lessThan runicTicks 3
                 set gameDifficulty 4
+                set COLOR_SELECTED RUNIC_BANNER
                 print "[#990099] ᑽᒀᑹᑳᑩ DIFFICULTY DISCOVERED. [#ffffff]Good luck."
                 message toast 4
                 jump doneDifficultyChange always 0 0
@@ -337,10 +379,10 @@ manageTouch:
     notDifficultyInput:
     doneDifficultyChange:
 
-        jump notStartInput greaterThan pixTouchY 40
+        jump notStartInput greaterThan pixTouchY 25
         jump notStartInput lessThan pixTouchY 3
-        jump notStartInput greaterThan pixTouchX 75
-        jump notStartInput lessThan pixTouchX 5
+        jump notStartInput greaterThan pixTouchX 70
+        jump notStartInput lessThan pixTouchX 10
 
         set gamestate 2
 
@@ -350,13 +392,12 @@ manageTouch:
 set @counter reti
 
 cyclic1Hz:
-    sensor managedTeam @this @team
-    fetch @unitCount activeUnits managedTeam 0 0
-    op doResetPointers equal activeUnits 0
+    fetch unitCount activeUnits managedTeam 0 0
+    op equal doResetPointers activeUnits 0
 
 
 set @counter reti
 
 cyclicNewWave:
-    set doResetPointers equal true
+    set doResetPointers true
 set @counter reti
