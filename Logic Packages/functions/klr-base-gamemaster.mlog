@@ -46,7 +46,8 @@ gameInit:
 
     set gameDifficulty 1
 
-    setrule buildSpeed -1 managedTeam
+    setprop @buildSpeed @clientUnit -1
+    setrule buildSpeed 0 @sharded
 
     set WMEM_ADDR 8
     set WMEMBUFF_IN baseUnitMemoryAddr
@@ -68,8 +69,7 @@ gameInit:
     op add reti @counter 1
     jump doWMEMwrite always 0 0
 
-    op add reti @counter 1
-    jump resetPointers always 0 0
+    op add reti @counter 1 
 
     set WMEM_ADDR 0
     set WMEMBUFF_IN true
@@ -79,7 +79,10 @@ gameInit:
     end
 
 beforeGameStart:
-    setrule buildSpeed 0 managedTeam
+    setprop @buildSpeed @clientUnit -1
+    setrule buildSpeed 0 @sharded
+    setrule currentWaveTime 300
+
     op floor secMod @second
     op mod secMod secMod 2
     jump mission1text equal secMod 0
@@ -113,7 +116,9 @@ runningConfig:
 
     doneConfig:
 
-    setrule buildSpeed 1 managedTeam
+    setprop @buildSpeed @clientUnit 1
+    setrule buildSpeed 1 @sharded
+
     set gamestate 3
     setprop @health display1 0
     print "Configuration data written. Game is starting, have fun!"
@@ -123,9 +128,12 @@ end
 gameStarted:
 
     op mod secToNext @waveTime 60
+    op floor secToNext secToNext
     op idiv minToNext @waveTime 60
 
-    print "[#CCCCCC]Next Wave: {0}:{1}s\n"
+    select secFixer lessThan secToNext 10 "0" ""
+
+    print "[#CCCCCC]Next Wave: {0}:{6}{1}s\n"
 
     read currUnitHeapHead cell1 1
     read currSquadHeapHead cell1 3
@@ -134,14 +142,23 @@ gameStarted:
     op sub currSquadHeapHead currSquadHeapHead baseSquadMemoryAddr
     op div unitMemoryUsage currUnitHeapHead unitHeapTotal
     op div squadMemoryUsage currSquadHeapHead squadHeapTotal
+    op floor unitMemoryUsageINT unitMemoryUsage 1
+    op floor squadMemoryUsageINT squadMemoryUsage 1
+    op mul unitMemoryUsageDEC unitMemoryUsage 100
+    op mul squadMemoryUsageDEC unitMemoryUsage 100
+    op floor unitMemoryUsageDEC unitMemoryUsageDEC
+    op floor squadMemoryUsageDEC squadMemoryUsageDEC
 
-    print "[#00CC00]Unit Memory: {2}%\n"
-    print "[#0000CC]Squad Memory: {3}%\n"
+    print "[#00CC00]Unit Memory: {2}.{3}%\n"
+    print "[#0000CC]Squad Memory: {4}.{5}%\n"
 
     format minToNext
     format secToNext
-    format unitMemoryUsage
-    format squadMemoryUsage
+    format unitMemoryUsageINT
+    format unitMemoryUsageDEC
+    format squadMemoryUsageINT
+    format squadMemoryUsageDEC
+    format secFixer
 
     message mission 1
     
