@@ -317,7 +317,7 @@ doWMEMwrite: #WMEM Write - Write to RAM Address
 set @counter reti
 
 manageTouch:
-    sensor touchXbase display1 @x #base display touch calculation
+    sensor touchXbase display1 @x #base display touch calculation  
     sensor touchYbase display1 @y
     sensor mouseX @clientUnit @shootX
     sensor mouseY @clientUnit @shootY
@@ -357,7 +357,7 @@ manageTouch:
 
         easyDifficultyChange:
             set gameDifficulty 0
-            print "[#009999]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. Little extra enemy spawns. "
+            print "[#009999]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. No extra enemies. "
             message toast 2
             jump doneDifficultyChange always 0 0
 
@@ -369,13 +369,13 @@ manageTouch:
 
         hardDifficultyChange:
             set gameDifficulty 2
-            print "[#999900]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Extra enemy spawns also activate by time. Guardians have more mechanics."
+            print "[#999900]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Standard extra enemy spawns. Guardians have more mechanics."
             message toast 2
             jump doneDifficultyChange always 0 0
 
         eradDifficultyChange:
             set gameDifficulty 3
-            print "[#FF0000]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Extra Enemy spawns are harder and do not respect wave timer. Guardians are much tougher and have even more mechanics"
+            print "[#FF0000]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Special extra enemy spawns. Guardians are much tougher and have even more mechanics"
             message toast 3
             jump doneDifficultyChange always 0 0
 
