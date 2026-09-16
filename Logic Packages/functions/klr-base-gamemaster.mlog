@@ -133,7 +133,7 @@ gameStarted:
 
     select secFixer lessThan secToNext 10 "0" ""
 
-    print "[#CCCCCC]Next Wave: {0}:{6}{1}s\n"
+    print "[#EEEEEE]Next Wave: {0}:{6}{1}s\n"
 
     read currUnitHeapHead cell1 1
     read currSquadHeapHead cell1 3
@@ -149,8 +149,8 @@ gameStarted:
     op floor unitMemoryUsageDEC unitMemoryUsageDEC
     op floor squadMemoryUsageDEC squadMemoryUsageDEC
 
-    print "[#00CC00]Unit Memory: {2}.{3}%\n"
-    print "[#0000CC]Squad Memory: {4}.{5}%\n"
+    print "[#55ff55]uMEM: {2}.{3}%\n"
+    print "[#2299ff]sMEM: {4}.{5}%\n"
 
     format minToNext
     format secToNext
@@ -397,7 +397,7 @@ manageTouch:
     doneDifficultyChange:
 
         jump notStartInput greaterThan pixTouchY 25
-        jump notStartInput lessThan pixTouchY 3
+        jump notStartInput lessThan pixTouchY 0
         jump notStartInput greaterThan pixTouchX 70
         jump notStartInput lessThan pixTouchX 10
 
