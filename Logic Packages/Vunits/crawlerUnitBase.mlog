@@ -1,20 +1,20 @@
 # Base Unit Module and Example
 
 setrate 500
-set TARGET_UNIT @mace
+set TARGET_UNIT @crawler
 
 set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set SQUADLOOKUP cell1 #Squad Lookup Initialization
 set SQUADID_CAN_JOIN 0x0022
-set SQUADID_CAN_LEAD 0x0020
+set SQUADID_CAN_LEAD 0x0000
 
-set coreWeight 0.5    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
-set turretWeight 3  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
-set genWeight 1     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
+set coreWeight 0.1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
+set turretWeight 1  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
+set genWeight 2     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
 set factWeight 1    # Default has all at 1, meaning it will target everything equally.
-set reactWeight 1
+set reactWeight 3
 set unitWeight 0
 
 set weaponRange 3      # Main weapon range, this you want to use against buildings. Will be used for big units too.
@@ -114,8 +114,6 @@ roaming:
         op add reti @counter 2    # Call target finding function
         jump targetFind always 0 0
         set reti 0
-
-
 
     end
 
