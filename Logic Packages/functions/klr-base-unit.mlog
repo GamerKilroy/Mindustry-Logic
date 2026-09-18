@@ -569,6 +569,13 @@ squadProcedure:  #Special "FUNCTION" that will manage squad search join and crea
         jump leadSquad equal WMEMBUFF_OUT @unit 
         noLeaderCheck:
 
+        op add WMEM_ADDR SQUADADDR 3
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        select SQUADADDR equal WMEMBUFF_OUT true SQUADADDR 0
+
         jump followSquad greaterThan SQUADADDR 0    # If you have a squad already, do not roam.
         
             set aa_trySearch true
