@@ -10,7 +10,7 @@ set SQUADLOOKUP cell1 #Squad Lookup Initialization
 set SQUADID_CAN_JOIN 0x0022
 set SQUADID_CAN_LEAD 0x0020
 
-set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
+set coreWeight 0.5    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
 set turretWeight 3  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
 set genWeight 1     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
 set factWeight 1    # Default has all at 1, meaning it will target everything equally.
@@ -91,50 +91,32 @@ roaming:
 
         op add reti @counter 2    # Call target finding function
         jump targetFind always 0 0
-        set reti 0
-
-        ##### uControl and shooting manager
-        jump hasCommand greaterThan maxWeight 0    # If somehow there is no target (core is not on the map?) just stop...? Usually a configuration mistake (coreWeight = 0?)
-        ucontrol stop
-        end
-        hasCommand:  
-
-        jump usePDSRange equal isPDSMode true          # Use PDS weapon range for small unit attacks
-
-        ucontrol within targetX targetY weaponRange hasLOF  #If in range of main weapon, shoot
-        jump outOfRange equal hasLOF false
-        set doShoot true
-        outOfRange:
-
-        usePDSRange:
-        ucontrol within targetX targetY PDSRange hasLOF   #if in range of PDS, shoot
-        jump outOfRangePDS equal hasLOF false
-        set doShoot true
-        outOfRangePDS:
-
-        jump rotateToCore equal doShoot false
-        ucontrol targetp currTarget doShoot   
-        jump doMovement always 0 0
-        rotateToCore:
-        ucontrol target coreX coreY 0
-
-        doMovement: 
+        set reti 0  
 
         # Insert specific basic unit movement here
-        ucontrol approach 0 0 0
+        ucontrol pathfind targetX targetY
+        ucontrol target targetX targetY doShoot
     end
 
     controlOBAI:        #If you're an OBAI unit, look for a squad to join. There should usually be one unless all leaders are dead.
         op add reti @counter 2
         jump squadProcedure always 0 0
         set reti 0
+    end
 
+    ####################### CUSTOM RAM ROAMING CODE HERE
     roamingOBAI:        #If you're not part of a squad, still try to use your RAM to your best potential.
-        set 0 0         ####################### CUSTOM RAM ROAMING CODE HERE
+        jump controlKAI always 0 0
+        set 0 0         
     end 
 
     leadSquad:          #If you're the leader, you're expected to do more!
-        ucontrol move 90 90       ####################### CUSTOM SQUAD LEADER LOGIC HERE
+        op add reti @counter 2    # Call target finding function
+        jump targetFind always 0 0
+        set reti 0
+
+
+
     end
 
     followSquad:        #Otherwise, just follow orders.
@@ -144,9 +126,53 @@ roaming:
         jump doWMEMread always 0 0
         set reti 0
 
-        sensor leaderX WMEMBUFF_OUT @x
-        sensor leaderY WMEMBUFF_OUT @y
-        ucontrol approach leaderX leaderY 1
+        set u_leader WMEMBUFF_OUT
+        sensor leaderX u_leader @x
+        sensor leaderY u_leader @y
+        
+        op add WMEM_ADDR SQUADADDR 8
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        jump noGRegroup equal WMEMBUFF_OUT false
+            ucontrol approach leaderX leaderY 2
+            end
+        noGRegroup:
+
+        op add WMEM_ADDR SQUADADDR 9
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        jump noGStop equal WMEMBUFF_OUT false
+            ucontrol stop
+            end
+        noGStop:
+
+        op add WMEM_ADDR SQUADADDR 1
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        set currSquadType WMEMBUFF_OUT
+
+        jump delayAttackSquadCommand equal currSquadType 0x0020
+        end
+
+        delayAttackSquadCommand:
+
+            op add WMEM_ADDR SQUADADDR 26
+            op add reti @counter 2
+            jump doWMEMread always 0 0
+            set reti 0
+
+            jump noAttackYet equal WMEMBUFF_OUT false
+                jump controlKAI always 0 0
+            noAttackYet:
+
+            ucontrol approach leaderX leaderY 2
+        end
 
     end
 
@@ -551,6 +577,21 @@ targetFind: #OLD RoamingDefault is now a targetFinding function. Will look for v
     set unitScaled 0
     bigEnough:
     unitNotHighest:
+
+    jump usePDSRange equal isPDSMode true          # Use PDS weapon range for small unit attacks
+
+    ucontrol within targetX targetY weaponRange hasLOF  #If in range of main weapon, shoot
+    jump outOfRange equal hasLOF false
+    set doShoot true
+    outOfRange:
+
+    usePDSRange:
+    ucontrol within targetX targetY PDSRange hasLOF   #if in range of PDS, shoot
+    jump outOfRangePDS equal hasLOF false
+    set doShoot true
+    outOfRangePDS:
+
+
 set @counter reti
 
 squadProcedure:  #Special "FUNCTION" that will manage squad search join and create but does not reti. Will instead directly jump to the proper control group.
