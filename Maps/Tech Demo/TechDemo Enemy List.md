@@ -20,7 +20,7 @@ Squads Active:
     Always OBAI
 
 ### Mace
-    Can Lead: 2
+    Can Lead: 6
     Can Join: 2, 6
     6 -> AttackUnit
 
