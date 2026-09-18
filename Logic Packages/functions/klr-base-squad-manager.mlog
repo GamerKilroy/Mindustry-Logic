@@ -38,7 +38,6 @@ continueSquadSearch:
             jump maintenanceLoop greaterThan maintCount 20
             jump maintenanceLoop equal leaderDead true
             set reti 0
-            setrate 500
 
             op add WMEM_ADDR squadLookupMemoryAddr 16
             op add WMEMBUFF_IN maintCount 1
@@ -92,7 +91,6 @@ maintenanceLoop:
 
         set currSerg WMEMBUFF_OUT
 
-        ############## DYNAMIC LEADER SELECTION RULES HERE
         sensor sergDead currSerg @dead
 
         jump sergStillAlive equal sergDead false
@@ -108,6 +106,8 @@ maintenanceLoop:
 
 
         sergStillAlive:
+
+        ############## DYNAMIC LEADER SELECTION RULES HERE
         sensor sergHealth currSerg @maxHealth
         
         jump notGoodEnough lessThanEq  sergHealth leaderHealth  

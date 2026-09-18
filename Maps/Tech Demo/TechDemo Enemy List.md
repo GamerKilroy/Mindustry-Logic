@@ -7,9 +7,6 @@ Squads Active:
 4. DropshipSquad (ID 4)
 5. PathfindBoostSquad (ID 5)
 6. DelayAttackSquad (ID 6)
-7. BodyCoverSquad (ID 7)
-20. Midboss (ID 20)
-21. Endboss (ID 21)
 
 
 ## Unit Definitions
