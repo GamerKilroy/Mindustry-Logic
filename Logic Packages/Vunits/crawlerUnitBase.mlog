@@ -1,6 +1,6 @@
 # Base Unit Module and Example
 
-setrate 500
+setrate 1000
 set TARGET_UNIT @crawler
 
 set WMEM processor1   #RAM Initialization - Do not touch
@@ -169,7 +169,7 @@ roaming:
                 jump controlKAI always 0 0
             noAttackYet:
 
-            ucontrol approach leaderX leaderY 2
+            ucontrol approach leaderX leaderY 20
         end
 
     end

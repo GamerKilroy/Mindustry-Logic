@@ -1,6 +1,6 @@
 # Manages the gamestate, initializes waypoints, requests cutscenes and more.
 
-setrate 500
+setrate 1000
 noWMEM:
 op add test test 1
 print processor1
@@ -48,8 +48,27 @@ jump gameStarted equal gamestate 3 #Gametime checks
 end
 
 gameInit:
+    print "Game initializing, please wait..."
+    message mission 2
+    setrule currentWaveTime 3600
+
+    wait 1
 
     set gameDifficulty 1
+    set savedWaveTime @waveTime
+    
+
+    sensor rawXbase display1 @x #base display touch calculation  
+    sensor rawYbase display1 @y
+
+    op sub touchXbase rawXbase 1
+    op sub touchYbase rawYbase 1
+
+    op sub markerY rawYbase 2
+
+    print "Game initializing. If this is stuck, warn the map maker!"
+    makemarker text 100 rawXbase markerY true
+    setmarker flushText 100 0
 
     setprop @buildSpeed @clientUnit -1
     setrule buildSpeed 0 @sharded
@@ -87,33 +106,59 @@ gameInit:
 beforeGameStart:
     setprop @buildSpeed @clientUnit -1
     setrule buildSpeed 0 @sharded
-    op mul currentWT @waveTime 2
-    setrule currentWaveTime 5
+    op mul currentWT savedWaveTime 1
+    setrule currentWaveTime currentWT
     setprop @health display1 9999
 
     op floor secMod @second
-    op mod secMod secMod 2
+    op mod secMod secMod 4
     jump mission1text equal secMod 0
-    jump mission2text equal secMod 1
+    jump mission2text equal secMod 2
+    jump textDoneBGS always 0 0
 
     mission1text:
         print "Wave timer inactive"
-        message mission 1
+        message mission 2
         jump textDoneBGS always 0 0 
         
 
     mission2text:
         print "Select difficulty and START"
-        message mission 1
+        message mission 2
         jump textDoneBGS always 0 0
 
     textDoneBGS:
+
+    jump mNotEasy notEqual gameDifficulty 0
+        print "[#009999]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. No extra enemies. "
+    mNotEasy:
+    jump mNotNormal notEqual gameDifficulty 1
+        print "[#00FF00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Standard extra enemy spawns."
+    mNotNormal:
+    jump mNotHard notEqual gameDifficulty 2
+        print "[#999900]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Standard extra enemy spawns. Guardians have more mechanics."
+    mNotHard:
+    jump mNotErad notEqual gameDifficulty 3
+        print "[#FF0000]ERADICATION difficulty selected. [#ffffff]All OB-AI are active. Special extra enemy spawns. Guardians are much tougher and have even more mechanics"
+    mNotErad:
+    jump mNotRunic notEqual gameDifficulty 4
+        print "[#990099] ᑽᒀᑹᑳᑩ DIFFICULTY DISCOVERED. [#ffffff]Good luck."
+    mNotRunic:
+    setmarker flushText 100 0
     end
 
 runningConfig:
 
+    print "Running config, please wait..."
+    message mission 2
+
     set WMEM_ADDR 50
-    set WMEMBUFF_IN @nova
+    set WMEMBUFF_IN @mace
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+
+    set WMEM_ADDR 51
+    set WMEMBUFF_IN @crawler
     op add reti @counter 1
     jump doWMEMwrite always 0 0
 
@@ -130,8 +175,9 @@ runningConfig:
     set gamestate 3
     sync gamestate
     setprop @health display1 0
-    print "Configuration data written. Game is starting, have fun!"
-    message toast 4
+    setmarker remove 100
+    print "Game started, have fun!"
+    message notify 2
 end
 
 gameStarted:
@@ -326,12 +372,16 @@ doWMEMwrite: #WMEM Write - Write to RAM Address
 set @counter reti
 
 manageTouch:
-    sensor touchXbase display1 @x #base display touch calculation  
-    sensor touchYbase display1 @y
-    sensor mouseX @clientUnit @shootX
-    sensor mouseY @clientUnit @shootY
-    op sub touchXbase touchXbase 1
-    op sub touchYbase touchYbase 1
+
+    fetch playerCount numPlayers @crux
+    set i 0
+
+    touchRepeatForEachPlayer:
+    fetch player currPlayer @crux i
+    
+    sensor mouseX currPlayer @shootX
+    sensor mouseY currPlayer @shootY
+    
     op sub touchX mouseX touchXbase
     op sub touchY mouseY touchYbase
     op div pixTouchX touchX 3
@@ -339,18 +389,9 @@ manageTouch:
     op mul pixTouchX pixTouchX 96
     op mul pixTouchY pixTouchY 96
 
-    sensor isShooting @clientUnit @shooting
+    sensor isShooting currPlayer @shooting
 
-    jump noShootFront equal isShooting lastShooting
-        jump noShootFront equal isShooting false
-            set FPshoot true
-            jump endShootFront always 0 0
-    noShootFront:
-        set FPshoot false
-    endShootFront:
-        set lastShooting isShooting
-
-    jump noTouchInput equal FPshoot false
+    jump noTouchInput equal isShooting false
 
         jump notDifficultyInput greaterThan pixTouchY 60
         jump notDifficultyInput lessThan pixTouchY 37
@@ -366,26 +407,18 @@ manageTouch:
 
         easyDifficultyChange:
             set gameDifficulty 0
-            print "[#009999]Easy Difficulty Selected. [#ffffff]Most OB-AI are off. No extra enemies. "
-            message toast 2
             jump doneDifficultyChange always 0 0
 
         mediumDifficultyChange:
             set gameDifficulty 1
-            print "[#00FF00]Medium Difficulty Selected. [#ffffff]Default OB-AI configuration. Standard extra enemy spawns."
-            message toast 2
             jump doneDifficultyChange always 0 0
 
         hardDifficultyChange:
             set gameDifficulty 2
-            print "[#999900]Hard Difficulty Selected. [#ffffff]All OB-AI are active. Standard extra enemy spawns. Guardians have more mechanics."
-            message toast 2
             jump doneDifficultyChange always 0 0
 
         eradDifficultyChange:
             set gameDifficulty 3
-            print "[#FF0000]ERADICATION difficulty selected. [#ffffff]All OB_AI are active. Special extra enemy spawns. Guardians are much tougher and have even more mechanics"
-            message toast 3
             jump doneDifficultyChange always 0 0
 
         runicDifficultyChange:
@@ -394,8 +427,6 @@ manageTouch:
             jump notEnoughRunicTicks lessThan runicTicks 3
                 set gameDifficulty 4
                 set COLOR_SELECTED RUNIC_BANNER
-                print "[#990099] ᑽᒀᑹᑳᑩ DIFFICULTY DISCOVERED. [#ffffff]Good luck."
-                message toast 4
                 jump doneDifficultyChange always 0 0
             notEnoughRunicTicks:
             print "Click..."
@@ -405,7 +436,6 @@ manageTouch:
 
     notDifficultyInput:
     doneDifficultyChange:
-    sync gameDifficulty
 
     
 
@@ -414,12 +444,14 @@ manageTouch:
         jump notStartInput greaterThan pixTouchX 70
         jump notStartInput lessThan pixTouchX 10
 
-        sync gameDifficulty
         set gamestate 2
         sync gamestate
 
     notStartInput:
     noTouchInput:
+
+    op add i i 1
+    jump touchRepeatForEachPlayer lessThan i numPlayers
 
 set @counter reti
 

@@ -1,6 +1,6 @@
 # Base Unit Module and Example
 
-setrate 500
+setrate 1000
 set TARGET_UNIT @mace
 
 set WMEM processor1   #RAM Initialization - Do not touch
@@ -146,7 +146,7 @@ roaming:
         set reti 0
 
         jump noGStop equal WMEMBUFF_OUT false
-            ucontrol stop
+            #ucontrol stop
             end
         noGStop:
 
@@ -171,7 +171,7 @@ roaming:
                 jump controlKAI always 0 0
             noAttackYet:
 
-            ucontrol approach leaderX leaderY 2
+            ucontrol approach leaderX leaderY 40
         end
 
     end

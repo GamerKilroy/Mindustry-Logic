@@ -46,10 +46,11 @@ continueSquadSearch:
             set reti 0
 
             ############## SQUAD CALCULATIONS HERE - INCLUDING WAYPOINTS!
-            ubind u_leader
-            ulocate building turret enemy @copper turrX turrY isFound b_turret
-            ucontrol within turrX turrY 50 nearDefenses
-            ucontrol unbind 
+            #ubind u_leader
+            #ulocate building turret enemy @copper turrX turrY isFound b_turret
+            #ucontrol unbind
+            #ucontrol within turrX turrY 50 nearDefenses
+             
 
             jump nearDefenses equal nearDefenses true
                 op add WMEM_ADDR squadLookupMemoryAddr 8
