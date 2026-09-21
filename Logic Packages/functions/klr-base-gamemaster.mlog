@@ -1,6 +1,11 @@
 # Manages the gamestate, initializes waypoints, requests cutscenes and more.
 
 setrate 500
+noWMEM:
+op add test test 1
+print processor1
+printflush message1
+jump noWMEM equal processor1 null
 set WMEM processor1 # Link to ram
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
@@ -76,12 +81,15 @@ gameInit:
     op add reti @counter 1
     jump doWMEMwrite always 0 0
     set gamestate 1
+    sync gamestate
     end
 
 beforeGameStart:
     setprop @buildSpeed @clientUnit -1
     setrule buildSpeed 0 @sharded
-    setrule currentWaveTime 300
+    op mul currentWT @waveTime 2
+    setrule currentWaveTime 5
+    setprop @health display1 9999
 
     op floor secMod @second
     op mod secMod secMod 2
@@ -120,6 +128,7 @@ runningConfig:
     setrule buildSpeed 1 @sharded
 
     set gamestate 3
+    sync gamestate
     setprop @health display1 0
     print "Configuration data written. Game is starting, have fun!"
     message toast 4
@@ -390,18 +399,24 @@ manageTouch:
                 jump doneDifficultyChange always 0 0
             notEnoughRunicTicks:
             print "Click..."
+            sync runicTicks
             message toast 1
             jump doneDifficultyChange always 0 0
 
     notDifficultyInput:
     doneDifficultyChange:
+    sync gameDifficulty
+
+    
 
         jump notStartInput greaterThan pixTouchY 25
         jump notStartInput lessThan pixTouchY 0
         jump notStartInput greaterThan pixTouchX 70
         jump notStartInput lessThan pixTouchX 10
 
+        sync gameDifficulty
         set gamestate 2
+        sync gamestate
 
     notStartInput:
     noTouchInput:

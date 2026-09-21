@@ -115,7 +115,7 @@ roaming:
         jump targetFind always 0 0
         set reti 0
 
-
+        jump controlKAI always 0 0
 
     end
 
