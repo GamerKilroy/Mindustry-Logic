@@ -2,12 +2,12 @@
 +1      INT         SQUAD_TYPE                          The BITMASK representing the Squad's Type. Refer to SquadTypes.md
 +2      BOOL        SquadInitialized                    0 when the squad manager has not initialized the squad data yet.                      
 +3      BOOL        SquadValid                          0 when the squad is no longer valid.
-+4 
-+5          
-+6      
-+7      
++4      INT         LCOMMAND - UNUSED                   Leader Commands
++5      INT         LCOMMAND - UNUSED    
++6      INT         LCOMMAND - UNUSED
++7      INT         LCOMMAND - UNUSED
 -----
-+8      BOOL        GCOMMAND - REGROUP                       GCOMMANDS, common for all SQUADS
++8      BOOL        GCOMMAND - REGROUP                  GCOMMANDS, common for all SQUADS
 +9      BOOL        GCOMMAND - STOP
 +10     BOOL        GCOMMAND - UNUSED
 +11     BOOL        GCOMMAND - UNUSED
@@ -16,16 +16,16 @@
 +14     BOOL        GCOMMAND - UNUSED
 +15     BOOL        GCOMMAND - UNUSED
 -----
-+16     INT         MAINTENANCE COUNTER
-+17     UNUSED
-+18     UNUSED
++16     INT         MAINTENANCE COUNTER                 Maintenance counter for Dynamic Squad Selection and Squad Validity Checks.
++17     REAL        FURTHEST_UNIT                       Distance to the furthest unit in squad
++18     @void       CURR_TARGET_SHOOT                   The current TargetFind of the Squad's Leader.
 +19     UNUSED
 +20     UNUSED
 +21     UNUSED
 +22     UNUSED
 +23     UNUSED
 -----
-+24     INT         logic1 Command 1                       Logic Commands for Soldiers
++24     INT         logic1 Command 1                    Logic Commands for Soldiers
 +25     INT         logic1 Command 2
 +26     INT         logic2 Command 1
 +27     INT         logic2 Command 2
@@ -34,7 +34,7 @@
 +30     INT         logic4 Command 1
 +31     INT         logic4 Command 2 
 -----
-+32     INT         logic1 Waypoint X 1                     Logic Waypoints for Soldiers
++32     INT         logic1 Waypoint X 1                 Logic Waypoints for Soldiers
 +33     INT         logic1 Waypoint Y 1
 +34     INT         logic1 Waypoint X 2
 +35     INT         logic1 Waypoint Y 2

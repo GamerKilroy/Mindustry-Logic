@@ -115,42 +115,94 @@ roaming:
         jump targetFind always 0 0
         set reti 0
 
+        op add WMEM_ADDR SQUADADDR 18 #CURR_TARGET
+        set WMEMBUFF_IN currTarget
+        op add reti @counter 2
+        jump doWMEMwrite always 0 0
+        set reti 0
+
+        ucontrol within targetX targetY 40 startDelayAttackRange
+        jump squadTooFarDelayAttack equal startDelayAttackRange false
+
+            set WMEMBUFF_OUT 1
+            op add WMEM_ADDR SQUADADDR 4 #lCommand 1
+            op add reti @counter 2
+            jump doWMEMwrite always 0 0
+            set reti 0
+
+            op add WMEM_ADDR SQUADADDR 26 #Command Channel 2-1
+            op add reti @counter 2
+            jump doWMEMread always 0 0
+            set reti 0
+
+            jump notDelayAttackYet equal WMEMBUFF_OUT false
+                jump controlKAI always 0 0
+                end
+            notDelayAttackYet:
+                ucontrol stop
+                end
+
+
+        squadTooFarDelayAttack:
+        set WMEMBUFF_OUT 0
+        op add WMEM_ADDR SQUADADDR 4 #lCommand 1
+        op add reti @counter 2
+        jump doWMEMwrite always 0 0
+        set reti 0
         jump controlKAI always 0 0
 
     end
 
     followSquad:        #Otherwise, just follow orders.
                 ####################### COMMAND CHANNEL LOGIC HERE
-        set WMEM_ADDR SQUADADDR
-        op add reti @counter 2
+        set WMEM_ADDR SQUADADDR    #Obtain Leader data
+        op add reti @counter 2 
         jump doWMEMread always 0 0
         set reti 0
 
         set u_leader WMEMBUFF_OUT
         sensor leaderX u_leader @x
         sensor leaderY u_leader @y
+
+        op add WMEM_ADDR SQUADADDR 3 #Check squad validity
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        jump squadValid equal WMEMBUFF_OUT true
+            sensor originalBitpack @unit @flag #If the squad's invalid, delete your own squadaddr.
+            op mod newBitpack originalBitpack 1000000
+            ucontrol flag newBitpack
+            end
+        squadValid:
         
-        op add WMEM_ADDR SQUADADDR 8
+        op add WMEM_ADDR SQUADADDR 8 #Check for gCommand Regroup
         op add reti @counter 2
         jump doWMEMread always 0 0
         set reti 0
 
         jump noGRegroup equal WMEMBUFF_OUT false
-            ucontrol approach leaderX leaderY 2
-            end
+            ucontrol within leaderX leaderY 4 isCloseToLeader
+            
+            jump notCloseToLeadergRegroup equal isCloseToLeader false
+                ucontrol stop
+                end
+            notCloseToLeadergRegroup:
+                ucontrol pathfind leaderX leaderY
+                end
         noGRegroup:
 
-        op add WMEM_ADDR SQUADADDR 9
-        op add reti @counter 2
+        op add WMEM_ADDR SQUADADDR 9 #Check for gCommand STOP
+        op add reti @counter  
         jump doWMEMread always 0 0
         set reti 0
 
         jump noGStop equal WMEMBUFF_OUT false
-            #ucontrol stop
+            ucontrol stop
             end
         noGStop:
 
-        op add WMEM_ADDR SQUADADDR 1
+        op add WMEM_ADDR SQUADADDR 1 #Read squad type from memory
         op add reti @counter 2
         jump doWMEMread always 0 0
         set reti 0
@@ -162,7 +214,7 @@ roaming:
 
         delayAttackSquadCommand:
 
-            op add WMEM_ADDR SQUADADDR 26
+            op add WMEM_ADDR SQUADADDR 26 #Command Channel 2-1
             op add reti @counter 2
             jump doWMEMread always 0 0
             set reti 0
@@ -170,8 +222,29 @@ roaming:
             jump noAttackYet equal WMEMBUFF_OUT false
                 jump controlKAI always 0 0
             noAttackYet:
+            
+            sensor hereX @unit @x    # Find the current unit position
+            sensor hereY @unit @y
+            op sub aX leaderX hereX     # Calculate weighted distance to Leader
+            op pow aXsq aX 2
+            op sub bY leaderY hereY 
+            op pow bYsq bY 2
+            op add c2 aXsq bYsq
+            op sqrt leaderDist c2 c2
 
-            ucontrol approach leaderX leaderY 40
+            op add WMEM_ADDR SQUADADDR 17 #Furthest Unit From Leader
+            op add reti @counter 2
+            jump doWMEMread always 0 0
+            set reti 0
+
+            jump notFurthestDelayAttack lessThan leaderDist WMEMBUFF_OUT #If you're the furthest unit, write your distance to leader.
+                set WMEMBUFF_IN leaderDist
+                op add reti @counter 2
+                jump doWMEMwrite always 0 0
+                set reti 0
+            notFurthestDelayAttack:
+
+            ucontrol approach leaderX leaderY 3
         end
 
     end
