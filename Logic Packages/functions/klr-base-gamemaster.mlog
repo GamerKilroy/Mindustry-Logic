@@ -215,7 +215,7 @@ gameStarted:
     op floor unitMemoryUsageINT unitMemoryUsage 1
     op floor squadMemoryUsageINT squadMemoryUsage 1
     op mul unitMemoryUsageDEC unitMemoryUsage 100
-    op mul squadMemoryUsageDEC unitMemoryUsage 100
+    op mul squadMemoryUsageDEC squadMemoryUsage 100
     op floor unitMemoryUsageDEC unitMemoryUsageDEC
     op floor squadMemoryUsageDEC squadMemoryUsageDEC
 
