@@ -65,7 +65,7 @@ continueSquadSearch:
                 jump doWMEMwrite always 0 0
                 set reti 0
 
-                jump forceFinishIteration always 0 0
+                jump doneNearTurretCheck always 0 0
 
             nearDefenses:
 
@@ -85,17 +85,19 @@ continueSquadSearch:
                 jump doWMEMwrite always 0 0
                 set reti 0
 
-                jump forceFinishIteration always 0 0
+                jump doneNearTurretCheck always 0 0
 
-            forceFinishIteration:
+            doneNearTurretCheck:
 
             op add WMEM_ADDR squadLookupMemoryAddr 17
             op add reti @counter 2
             jump doWMEMread always 0 0
             set reti 0
 
-            jump stop_gRegroup lessThan WMEMBUFF_OUT 3
-            jump start_gRegroup greaterThan WMEMBUFF_OUT 7
+            op add WMEM_ADDR squadLookupMemoryAddr 8
+
+            jump stop_gRegroup lessThan WMEMBUFF_OUT 6
+            jump start_gRegroup greaterThan WMEMBUFF_OUT 12
             jump end_gRegroup always 0 0
 
             stop_gRegroup:

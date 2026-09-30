@@ -254,75 +254,13 @@ roaming:
                 set reti 0
             notFurthestDelayAttack:
 
-            ucontrol approach leaderX leaderY 3
+            ucontrol approach leaderX leaderY 5
         end
 
     end
 
 
 ##### FUNCTIONS BELOW - CALL BY SETTING ARGS THEN op reti add @counter +2 then jump to function always.
-doWMEMread: #WMEM Read - Read from RAM Address
-    waitForReadyRead:
-    read isBusy WMEM "isBusy"
-    jump waitForReadyRead equal isBusy true
-    read isBusy WMEM "isBusy"
-    jump waitForReadyRead equal isBusy true
-    write true WMEM "isBusy"
-    write @this WMEM "ACKtarget"
-    write WMEM_ADDR WMEM "addr"
-    write WMEMBUFF_IN WMEM "inbuffer"
-    write 1 WMEM "req"
-    waitACKRead: ; jump waitACKRead equal ramACK 0
-    set ramACK 0
-set @counter reti
-
-doWMEMwrite: #WMEM Write - Write to RAM Address
-    waitForReadyWrite:
-    read isBusy WMEM "isBusy"
-    jump waitForReadyWrite equal isBusy true
-    read isBusy WMEM "isBusy"
-    jump waitForReadyWrite equal isBusy true
-    write true WMEM "isBusy"
-    write @this WMEM "ACKtarget"
-    write WMEM_ADDR WMEM "addr"
-    write WMEMBUFF_IN WMEM "inbuffer"
-    write 2 WMEM "req"
-    waitACKWrite: ; jump waitACKWrite equal ramACK 0
-    set ramACK 0
-set @counter reti
-
-doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and len.
-    waitForReadyLookup:
-    read isBusy WMEM "isBusy"
-    jump waitForReadyLookup equal isBusy true
-    read isBusy WMEM "isBusy"
-    jump waitForReadyLookup equal isBusy true
-    write true WMEM "isBusy"
-    write @this WMEM "ACKtarget"
-    write WMEM_ADDR WMEM "addr"
-    write WMEMBUFF_IN WMEM "inbuffer"
-    write WMEMBUFF_LEN WMEM "reqLen"
-    write 4 WMEM "req"
-    waitACKLookup: ; jump waitACKLookup equal ramACK 0
-    set ramACK 0
-set @counter reti
-
-doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR back.
-
-    waitForReadyMalloc:
-    read isBusy WMEM "isBusy"
-    jump waitForReadyMalloc equal isBusy true
-    read isBusy WMEM "isBusy"
-    jump waitForReadyMalloc equal isBusy true
-    write true WMEM "isBusy"
-    write @this WMEM "ACKtarget"
-    write WMEM_ADDR WMEM "addr"
-    write WMEMBUFF_IN WMEM "inbuffer"
-    write WMEMBUFF_LEN WMEM "reqLen"
-    write 10 WMEM "req"
-    waitACKMalloc: ; jump waitACKMalloc equal ramACK 0
-    set ramACK 0
-set @counter reti
 
 doSquadSearch: #SquadSearch function. Will look for squads with a Valid ID to join.
     set i 0
@@ -678,8 +616,6 @@ targetFind: #OLD RoamingDefault is now a targetFinding function. Will look for v
 set @counter reti
 
 squadProcedure:  #Special "FUNCTION" that will manage squad search join and create but does not reti. Will instead directly jump to the proper control group.
-        wait 0.001
-
         set aa_lookLeader true
 
         jump noLeaderCheck equal SQUADADDR 0   
@@ -745,3 +681,67 @@ squadProcedure:  #Special "FUNCTION" that will manage squad search join and crea
             jump roamingOBAI always 0 0    ## If there is no squad and cannot create one, then just do RoamingOBAI logic.
         end
     end
+end
+
+doWMEMread: #WMEM Read - Read from RAM Address
+    waitForReadyRead:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyRead equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyRead equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write 1 WMEM "req"
+    waitACKRead: ; jump waitACKRead equal ramACK 0
+    set ramACK 0
+set @counter reti
+
+doWMEMwrite: #WMEM Write - Write to RAM Address
+    waitForReadyWrite:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyWrite equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyWrite equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write 2 WMEM "req"
+    waitACKWrite: ; jump waitACKWrite equal ramACK 0
+    set ramACK 0
+set @counter reti
+
+doWMEMlookup: #WMEM Lookup Target - Look for a value in RAM, define start and len.
+    waitForReadyLookup:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyLookup equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyLookup equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write WMEMBUFF_LEN WMEM "reqLen"
+    write 4 WMEM "req"
+    waitACKLookup: ; jump waitACKLookup equal ramACK 0
+    set ramACK 0
+set @counter reti
+
+doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR back.
+
+    waitForReadyMalloc:
+    read isBusy WMEM "isBusy"
+    jump waitForReadyMalloc equal isBusy true
+    read isBusy WMEM "isBusy"
+    jump waitForReadyMalloc equal isBusy true
+    write true WMEM "isBusy"
+    write @this WMEM "ACKtarget"
+    write WMEM_ADDR WMEM "addr"
+    write WMEMBUFF_IN WMEM "inbuffer"
+    write WMEMBUFF_LEN WMEM "reqLen"
+    write 10 WMEM "req"
+    waitACKMalloc: ; jump waitACKMalloc equal ramACK 0
+    set ramACK 0
+set @counter reti
