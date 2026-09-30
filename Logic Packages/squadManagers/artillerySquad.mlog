@@ -99,6 +99,9 @@ continueSquadSearch:
             op mul rightlY 4
             op add rightlY leaderY
 
+            effect cross leftlX leftlY 1 #FF0000
+            effect cross rightlX rightlY 1 #00FF00
+
             op add WMEM_ADDR squadLookupMemoryAddr 32
             set WMEMBUFF_IN leftlX
             op add reti @counter 1

@@ -167,6 +167,11 @@ runningConfig:
     op add reti @counter 1
     jump doWMEMwrite always 0 0
 
+    set WMEM_ADDR 52
+    set WMEMBUFF_IN @fortress
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+
     jump doneConfig equal gameDifficulty 0 # Below for Normal and above
     jump doneConfig equal gameDifficulty 1 # Below for Hard and above
     jump doneConfig equal gameDifficulty 2 # Below for Erad and above
