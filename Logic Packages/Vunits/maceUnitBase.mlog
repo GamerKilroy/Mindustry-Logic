@@ -121,6 +121,16 @@ roaming:
         jump doWMEMwrite always 0 0
         set reti 0
 
+        op add WMEM_ADDR SQUADADDR 8 #Check for gCommand Regroup
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        jump lnoGRegroup equal WMEMBUFF_OUT false
+            ucontrol stop
+            end
+        lnoGRegroup:
+
         ucontrol within targetX targetY 40 startDelayAttackRange
         jump squadTooFarDelayAttack equal startDelayAttackRange false
 

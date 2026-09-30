@@ -94,11 +94,11 @@ continueSquadSearch:
             jump doWMEMread always 0 0
             set reti 0
 
-            jump end_gRegroup lessThan WMEMBUFF_OUT 3
+            jump stop_gRegroup lessThan WMEMBUFF_OUT 3
             jump start_gRegroup greaterThan WMEMBUFF_OUT 7
-            jump no_gRegroup always 0 0
+            jump end_gRegroup always 0 0
 
-            end_gRegroup:
+            stop_gRegroup:
                 set WMEMBUFF_IN 0
                 op add reti @counter 2
                 jump doWMEMwrite always 0 0
