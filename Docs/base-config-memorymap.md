@@ -1,6 +1,6 @@
 0       BOOL                    SystemReady 
 +1      BOOL                    GameStarted
-+2      UNUSED                           
++2      INT                     GameDifficulty                           
 +3      UNUSED       
 +4      UNUSED       
 +5      UNUSED           

@@ -150,7 +150,12 @@ beforeGameStart:
 runningConfig:
 
     print "Running config, please wait..."
-    message mission 2
+    message mission 0
+
+    set WMEM_ADDR 2
+    set WMEMBUFF_IN gameDifficulty
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
 
     set WMEM_ADDR 50
     set WMEMBUFF_IN @mace
@@ -168,6 +173,11 @@ runningConfig:
     jump doneConfig equal gameDifficulty 3 # Below for RUNIC
 
     doneConfig:
+
+    set WMEM_ADDR 1
+    set WMEMBUFF_IN true
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
 
     setprop @buildSpeed @clientUnit 1
     setrule buildSpeed 1 @sharded

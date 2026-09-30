@@ -76,6 +76,14 @@ init:
         jump doWMEMwrite always 0 0
         set reti 0
 
+        op rand pBias
+        op mul pBias pBias 100
+        op floor pBias pBias
+        op add WMEM_ADDR ADDR 1
+        set WMEMBUFF_IN pBias
+        op add reti @counter 2
+        jump doWMEMwrite always 0 0
+
     end
  
 noRam:
@@ -165,6 +173,7 @@ roaming:
 
     followSquad:        #Otherwise, just follow orders.
                 ####################### COMMAND CHANNEL LOGIC HERE
+
         set WMEM_ADDR SQUADADDR    #Obtain Leader data
         op add reti @counter 2 
         jump doWMEMread always 0 0
@@ -616,18 +625,15 @@ targetFind: #OLD RoamingDefault is now a targetFinding function. Will look for v
 set @counter reti
 
 squadProcedure:  #Special "FUNCTION" that will manage squad search join and create but does not reti. Will instead directly jump to the proper control group.
-        set aa_lookLeader true
 
-        jump noLeaderCheck equal SQUADADDR 0   
+        jump needsSquad equal SQUADADDR 0   
+
         set WMEM_ADDR SQUADADDR  # If you're the leader, then lead - Don't follow!
         op add reti @counter 2
         jump doWMEMread always 0 0
         set reti 0
 
-        set aa_lookLeaderDone true
-        set aa_isLeader WMEMBUFF_OUT
         jump leadSquad equal WMEMBUFF_OUT @unit 
-        noLeaderCheck:
 
         op add WMEM_ADDR SQUADADDR 3
         op add reti @counter 2
@@ -636,25 +642,19 @@ squadProcedure:  #Special "FUNCTION" that will manage squad search join and crea
 
         select SQUADADDR equal WMEMBUFF_OUT true SQUADADDR 0
 
+        needsSquad:
+
         jump followSquad greaterThan SQUADADDR 0    # If you have a squad already, do not roam.
         
-            set aa_trySearch true
             op add reti @counter 2                  # Search for valid squads
             jump doSquadSearch always 0 0
             set reti 0
 
-            set squadToJoin 0
-
-            set aa_tryJoin true
-
             jump noValidSquads equal VALID_SQUADS 0 # If there are 0 squads, try to create one
             jump onlyOneValid equal VALID_SQUADS 1 # If there is only one, then join that
-                op div scale  1 VALID_SQUADS       # Otherwise roll for which one to join
                 op rand RNGroll 1
-                op div squadToJoin RNGroll scale 
+                op mul squadToJoin RNGroll VALID_SQUADS 
                 op floor squadToJoin squadToJoin 0
-
-                set aa_RNGroll true
 
             onlyOneValid:
 
