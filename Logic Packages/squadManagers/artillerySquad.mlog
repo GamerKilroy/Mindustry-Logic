@@ -1,5 +1,5 @@
 setrate 1000
-set THIS_MANAGES 0x0020    #The Squad ID that's managed by this wProc
+set THIS_MANAGES 0x001    #The Squad ID that's managed by this wProc
 
 set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
@@ -26,6 +26,8 @@ continueSquadSearch:
 
             set u_leader WMEMBUFF_OUT # Find the leader position and range
             sensor leaderDead u_leader @dead
+            sensor leaderX u_leader @x
+            sensor leaderY u_leader @y
             
             op add WMEM_ADDR squadLookupMemoryAddr 16 # Read the Maintenance Counter
             op add reti @counter 2
@@ -44,45 +46,6 @@ continueSquadSearch:
             op add reti @counter 2
             jump doWMEMwrite always 0 0
             set reti 0
-
-            op add WMEM_ADDR squadLookupMemoryAddr 4 # Read lCommand 1
-            op add reti @counter 2
-            jump doWMEMread always 0 0
-            set reti 0
-
-            set nearDefenses WMEMBUFF_OUT
-
-            jump nearDefenses equal nearDefenses true
-
-                op add WMEM_ADDR squadLookupMemoryAddr 24
-                set WMEMBUFF_IN 0
-                op add reti @counter 2
-                jump doWMEMwrite always 0 0
-                set reti 0
-
-                jump doneNearTurretCheck always 0 0
-
-            nearDefenses:
-
-                op add WMEM_ADDR squadLookupMemoryAddr 24 
-                op add reti @counter 2
-                jump doWMEMread always 0 0
-                set reti 0
-                select doAttack greaterThan WMEMBUFF_OUT 100 true false
-                op add WMEMBUFF_IN WMEMBUFF_OUT 1
-                op add reti @counter 2
-                jump doWMEMwrite always 0 0
-                set reti 0
-
-                op add WMEM_ADDR squadLookupMemoryAddr 26
-                set WMEMBUFF_IN doAttack
-                op add reti @counter 2
-                jump doWMEMwrite always 0 0
-                set reti 0
-
-                jump doneNearTurretCheck always 0 0
-
-            doneNearTurretCheck:
 
             op add WMEM_ADDR squadLookupMemoryAddr 17 # Check gRegroup distances
             op add reti @counter 2
@@ -111,6 +74,50 @@ continueSquadSearch:
 
             end_gRegroup:
 
+            sensor lRot u_leader @rotation
+            op add rawRot lRot 10
+            op add reti @counter 1
+            jump rotSanitize always 0 0
+            set leftlRot rot
+
+            op sub rawRot lRot 10
+            op add reti @counter 1
+            jump rotSanitize always 0 0
+            set rightlRot rot
+
+            op cos leftlX leftlRot
+            op mul leftlX 4
+            op add leftlX leaderX
+            op sin leftlY leftlRot
+            op mul leftlY 4
+            op add leftlY leaderY
+
+            op cos rightlX rightlRot
+            op mul rightlX 4
+            op add rightlX leaderX
+            op sin rightlY rightlRot
+            op mul rightlY 4
+            op add rightlY leaderY
+
+            op add WMEM_ADDR squadLookupMemoryAddr 32
+            set WMEMBUFF_IN leftlX
+            op add reti @counter 1
+            jump doWMEMwrite always 0 0
+
+            op add WMEM_ADDR squadLookupMemoryAddr 33
+            set WMEMBUFF_IN leftlY
+            op add reti @counter 1
+            jump doWMEMwrite always 0 0
+
+            op add WMEM_ADDR squadLookupMemoryAddr 34
+            set WMEMBUFF_IN rightlX
+            op add reti @counter 1
+            jump doWMEMwrite always 0 0
+
+            op add WMEM_ADDR squadLookupMemoryAddr 35
+            set WMEMBUFF_IN rightlY
+            op add reti @counter 1
+            jump doWMEMwrite always 0 0
 
         SquadNotAcceptedSearch:
     noSquadHereSearch:
@@ -302,3 +309,17 @@ doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR b
     waitACKMalloc: ; jump waitACKMalloc equal ramACK 0
     set ramACK 0
 set @counter reti
+
+rotSanitize:
+
+    jump overflowRot greaterThan rawRot 360
+    jump underflowRot lessThan rawRot 0
+    set rot rawRot
+    set @counter reti
+    overflowRot:
+        op sub rot rawRot 360
+        set @counter reti
+    underflowRot: 
+        op add rot rawRot 360
+        set @counter reti
+end

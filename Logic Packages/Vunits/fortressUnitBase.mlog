@@ -1,24 +1,24 @@
 # Base Unit Module and Example
 
 setrate 1000
-set TARGET_UNIT @crawler
+set TARGET_UNIT @fortress
 
 set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set SQUADLOOKUP cell1 #Squad Lookup Initialization
-set SQUADID_CAN_JOIN 0x0022
-set SQUADID_CAN_LEAD 0x0000
+set SQUADID_CAN_JOIN 0x0001
+set SQUADID_CAN_LEAD 0x0001
 
-set coreWeight 0.5    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
+set coreWeight 1    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
 set turretWeight 3  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
 set genWeight 1     # However if the turrets do get close enough, it will still switch to turrets - If you didn't turn it off, that is.
-set factWeight 1    # Default has all at 1, meaning it will target everything equally.
+set factWeight 2    # Default has all at 1, meaning it will target everything equally.
 set reactWeight 1
 set unitWeight 0
 
-set weaponRange 3      # Main weapon range, this you want to use against buildings. Will be used for big units too.
-set PDSRange 3         # PDS weapons range, where available. This is the range at which you want to shoot at most units.
+set weaponRange 29      # Main weapon range, this you want to use against buildings. Will be used for big units too.
+set PDSRange 29         # PDS weapons range, where available. This is the range at which you want to shoot at most units.
 set PDSThreshold 9999    # If the Target Enemy Unit has more Max HP than this threshold, then it will use main weapons calculations, not PDS.
 # At the default of 500, you start hitting T2 ground units with main, and T3 air units with main.
 
@@ -119,7 +119,32 @@ roaming:
     end 
 
     leadSquad:          #If you're the leader, you're expected to do more!
-        jump controlKAI always 0 0
+        op add reti @counter 2    # Call target finding function
+        jump targetFind always 0 0
+        set reti 0
+
+        op add WMEM_ADDR SQUADADDR 18 #CURR_TARGET
+        set WMEMBUFF_IN currTarget
+        op add reti @counter 2
+        jump doWMEMwrite always 0 0
+        set reti 0
+
+        op add WMEM_ADDR SQUADADDR 8 #Check for gCommand Regroup
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        jump lnoGRegroup equal WMEMBUFF_OUT false
+            ucontrol stop
+            end
+        lnoGRegroup:
+
+        ucontrol within targetX targetY weaponRange isInRange
+        jump lnoRange equal isInRange false
+            ucontrol stop
+            ucontrol shootp target isInRange
+        lnoRange:
+            icontrol pathfind targetX targetY
     end
 
     followSquad:        #Otherwise, just follow orders.
@@ -179,26 +204,10 @@ roaming:
 
         set currSquadType WMEMBUFF_OUT
 
-        jump delayAttackSquadCommand equal currSquadType 0x0020
+        jump artillerySquadCommand equal currSquadType 0x0001
         end
 
-        delayAttackSquadCommand:
-
-            op add WMEM_ADDR SQUADADDR 24 #Command Channel 2-1
-            op add reti @counter 2
-            jump doWMEMread always 0 0
-            set reti 0
-
-            set commandChannel WMEMBUFF_OUT
-
-            op add WMEM_ADDR ADDR 1
-            op add reti @counter 2
-            jump doWMEMread always 0 0
-            set reti 0
-
-            jump noAttackYet greaterThan WMEMBUFF_OUT commandChannel
-                jump controlKAI always 0 0
-            noAttackYet:
+        artillerySquadCommand:
             
             sensor hereX @unit @x    # Find the current unit position
             sensor hereY @unit @y
@@ -221,7 +230,15 @@ roaming:
                 set reti 0
             notFurthestDelayAttack:
 
-            ucontrol approach leaderX leaderY 5
+            ucontrol pathfind leaderX leaderY
+
+            op add WMEM_ADDR SQUADADDR 18
+            sensor targetX WMEMBUFF_OUT @x
+            sensor targetY WMEMBUFF_OUT @y 
+
+            ucontrol within targetX targetY weaponRange isInRange
+            ucontrol target WMEMBUFF_OUT isInRange
+
         end
 
     end
