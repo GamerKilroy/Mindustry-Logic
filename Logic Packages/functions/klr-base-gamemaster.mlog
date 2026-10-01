@@ -268,21 +268,21 @@ drawScreen:
 
     draw clear 20 20 20
     jump noRunicBG notEqual gameDifficulty 4
-    draw clear 70 10 30
-    draw stroke 5
-    draw color 110 15 40
-    draw line 13 0 13 80
-    draw line 18 0 18 80
-    draw line 30 0 30 80
-    draw line 48 0 48 80
-    draw line 70 0 70 80
-    draw stroke 2
-    draw color 50 15 90
-    draw line 17 0 17 80
-    draw line 55 0 55 80
-    draw stroke 4
-    draw line 65 0 65 80
-    packcolor COLOR_SELECTED 150 150 150 1
+        draw clear 70 10 30
+        draw stroke 5
+        draw color 110 15 40
+        draw line 13 0 13 80
+        draw line 18 0 18 80
+        draw line 30 0 30 80
+        draw line 48 0 48 80
+        draw line 70 0 70 80
+        draw stroke 2
+        draw color 50 15 90
+        draw line 17 0 17 80
+        draw line 55 0 55 80
+        draw stroke 4
+        draw line 65 0 65 80
+        packcolor COLOR_SELECTED 150 150 150 1
     noRunicBG:
     draw stroke 2
     draw color 0 0 0 255
@@ -298,7 +298,9 @@ drawScreen:
     draw rect 1 40 18 25
     draw col GREEN_BRIGHT
     draw lineRect 1 40 18 25
-    draw line 5 44 15 61
+    draw stroke 1
+    draw line 5 45 15 60
+    draw stroke 2
 
     draw col YELLOW_DARK
     jump normalColorNotSelected notEqual gameDifficulty 1
@@ -309,8 +311,10 @@ drawScreen:
     draw rect 21 40 18 25
     draw col YELLOW_BRIGHT
     draw lineRect 21 40 18 25
-    draw line 23 44 33 61
-    draw line 27 44 37 61
+    draw stroke 1
+    draw line 23 45 33 60
+    draw line 27 45 37 60
+    draw stroke 2
 
     draw col RED_DARK
     jump hardColorNotSelected notEqual gameDifficulty 2
@@ -321,9 +325,11 @@ drawScreen:
     draw rect 41 40 18 25 
     draw col RED_BRIGHT
     draw lineRect 41 40 18 25 
-    draw line 43 44 53 61
-    draw line 45 44 55 61
-    draw line 47 44 57 61
+    draw stroke 1
+    draw line 43 45 53 60
+    draw line 45 45 55 60
+    draw line 47 45 57 60
+    draw stroke 2
 
     draw col PURPLE_DARK
     jump eradColorNotSelected notEqual gameDifficulty 3
@@ -334,10 +340,12 @@ drawScreen:
     draw rect 61 40 18 25
     draw col PURPLE_BRIGHT
     draw lineRect 61 40 18 25
-    draw line 63 44 73 61
-    draw line 65 44 75 61
-    draw line 67 44 77 61
-    draw line 75 46 65 59
+    draw stroke 1
+    draw line 63 45 73 60
+    draw line 65 45 75 60
+    draw line 67 45 77 60
+    draw line 75 49 65 57
+    draw stroke 2
 
     jump skipBanner equal gameDifficulty 4
         draw stroke 20
