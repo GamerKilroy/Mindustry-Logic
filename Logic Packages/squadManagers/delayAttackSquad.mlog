@@ -26,6 +26,8 @@ continueSquadSearch:
 
             set u_leader WMEMBUFF_OUT # Find the leader position and range
             sensor leaderDead u_leader @dead
+            sensor leaderX u_leader @x 
+            sensor leaderY u_leader @y 
             
             op add WMEM_ADDR squadLookupMemoryAddr 16 # Read the Maintenance Counter
             op add reti @counter 2
@@ -64,6 +66,9 @@ continueSquadSearch:
 
             nearDefenses:
 
+                jump doneNearTurretCheck lessThan @second triggerSecond
+                op add triggerSecond @second 1
+
                 op add WMEM_ADDR squadLookupMemoryAddr 24 
                 op add reti @counter 2
                 jump doWMEMread always 0 0
@@ -91,8 +96,8 @@ continueSquadSearch:
 
             op add WMEM_ADDR squadLookupMemoryAddr 8
 
-            jump stop_gRegroup lessThan WMEMBUFF_OUT 6
-            jump start_gRegroup greaterThan WMEMBUFF_OUT 12
+            jump stop_gRegroup lessThan WMEMBUFF_OUT 5
+            jump start_gRegroup greaterThan WMEMBUFF_OUT 15
             jump end_gRegroup always 0 0
 
             stop_gRegroup:
@@ -110,6 +115,57 @@ continueSquadSearch:
                 jump end_gRegroup always 0 0
 
             end_gRegroup:
+
+            sensor lRot u_leader @rotation
+            op add lRot2 lRot 180
+            set rawRot lRot2
+            op add reti @counter 1
+            jump rotSanitize always 0 0
+            set lRotRes retRot
+
+            op add rawRot lRotRes 75
+            op add reti @counter 1
+            jump rotSanitize always 0 0
+            set leftlRot retRot
+
+            op sub rawRot lRotRes 75
+            op add reti @counter 1
+            jump rotSanitize always 0 0
+            set rightlRot retRot
+
+            op cos leftlX leftlRot
+            op mul leftlX leftlX 4
+            op add leftlX leftlX leaderX
+            op sin leftlY leftlRot
+            op mul leftlY leftlY 4
+            op add leftlY leftlY leaderY
+ 
+            op cos rightlX rightlRot
+            op mul rightlX rightlX 4
+            op add rightlX rightlX leaderX
+            op sin rightlY rightlRot
+            op mul rightlY rightlY 4
+            op add rightlY rightlY leaderY
+
+            op add WMEM_ADDR squadLookupMemoryAddr 32
+            set WMEMBUFF_IN leftlX
+            op add reti @counter 1
+            jump doWMEMwrite always 0 0
+
+            op add WMEM_ADDR squadLookupMemoryAddr 33
+            set WMEMBUFF_IN leftlY
+            op add reti @counter 1
+            jump doWMEMwrite always 0 0
+
+            op add WMEM_ADDR squadLookupMemoryAddr 34
+            set WMEMBUFF_IN rightlX
+            op add reti @counter 1
+            jump doWMEMwrite always 0 0
+
+            op add WMEM_ADDR squadLookupMemoryAddr 35
+            set WMEMBUFF_IN rightlY
+            op add reti @counter 1
+            jump doWMEMwrite always 0 0
 
 
         SquadNotAcceptedSearch:
@@ -302,3 +358,17 @@ doWMEMmalloc: #WMEM Allocate Memory - Ask for a place in unit memory, get ADDR b
     waitACKMalloc: ; jump waitACKMalloc equal ramACK 0
     set ramACK 0
 set @counter reti
+
+rotSanitize:
+
+    jump overflowRot greaterThan rawRot 360
+    jump underflowRot lessThan rawRot 0
+    set retRot rawRot
+    set @counter reti
+    overflowRot:
+        op sub retRot rawRot 360
+        set @counter reti
+    underflowRot: 
+        op add retRot rawRot 360
+        set @counter reti
+end

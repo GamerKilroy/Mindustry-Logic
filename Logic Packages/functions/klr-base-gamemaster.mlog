@@ -51,7 +51,6 @@ gameInit:
     print "OB-AI Initializing"
     print "Please wait."
     message mission 2
-    setrule currentWaveTime 3600
 
     print "Game initializing. If this is stuck, warn the map maker!"
     makemarker text 100 rawXbase markerY true
@@ -117,20 +116,14 @@ beforeGameStart:
     jump textDoneBGS always 0 0
 
     mission1text:
-        print "OB-AI Ready\n"
-        print "Waves Paused\n"
-        print "Wave Timer: {0}s"
-        op floor currentWT currentWT
-        format currentWT
+        print "OB-AI Ready"
+        format gameDifficulty
         message mission 0
         jump textDoneBGS always 0 0 
         
 
     mission2text:
-        print "Use the screen\n"
-        print "to start the game\n"
-        print "Difficulty: {0}"
-        format gameDifficulty
+        print "Waiting START"
         message mission 0
         jump textDoneBGS always 0 0
 
@@ -176,6 +169,16 @@ runningConfig:
 
     set WMEM_ADDR 52
     set WMEMBUFF_IN @fortress
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+
+    set WMEM_ADDR 53
+    set WMEMBUFF_IN @quasar
+    op add reti @counter 1
+    jump doWMEMwrite always 0 0
+
+     set WMEM_ADDR 54
+    set WMEMBUFF_IN @dagger
     op add reti @counter 1
     jump doWMEMwrite always 0 0
 

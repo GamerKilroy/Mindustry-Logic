@@ -76,14 +76,14 @@ init:
         jump doWMEMwrite always 0 0
         set reti 0
 
-        op rand pBias
+        op rand pBias 1
         op mul pBias pBias 100
         op floor pBias pBias
-        op add WMEM_ADDR ADDR 1
+        op add WMEM_ADDR ADDR 3
         set WMEMBUFF_IN pBias
         op add reti @counter 2
         jump doWMEMwrite always 0 0
-
+        set reti 0
     end
  
 noRam:
@@ -107,6 +107,12 @@ roaming:
     end
 
     controlOBAI:        #If you're an OBAI unit, look for a squad to join. There should usually be one unless all leaders are dead.
+        op add WMEM_ADDR ADDR 3
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+        set pBias WMEMBUFF_OUT
+        
         op add reti @counter 2
         jump squadProcedure always 0 0
         set reti 0
@@ -119,7 +125,57 @@ roaming:
     end 
 
     leadSquad:          #If you're the leader, you're expected to do more!
+        op add reti @counter 2    # Call target finding function
+        jump targetFind always 0 0
+        set reti 0
+
+        op add WMEM_ADDR SQUADADDR 18 #CURR_TARGET
+        set WMEMBUFF_IN currTarget
+        op add reti @counter 2
+        jump doWMEMwrite always 0 0
+        set reti 0
+
+        op add WMEM_ADDR SQUADADDR 8 #Check for gCommand Regroup
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        jump lnoGRegroup equal WMEMBUFF_OUT false
+            ucontrol stop
+            end
+        lnoGRegroup:
+
+        ucontrol within targetX targetY 26 startDelayAttackRange
+        jump squadTooFarDelayAttack equal startDelayAttackRange false
+
+            set WMEMBUFF_IN 1
+            op add WMEM_ADDR SQUADADDR 4 #lCommand 1
+            op add reti @counter 2
+            jump doWMEMwrite always 0 0
+            set reti 0
+
+            op add WMEM_ADDR SQUADADDR 26 #Command Channel 2-1
+            op add reti @counter 2
+            jump doWMEMread always 0 0
+            set reti 0
+
+            jump notDelayAttackYet equal WMEMBUFF_OUT false
+                jump controlKAI always 0 0
+                end
+            notDelayAttackYet:
+                ucontrol stop
+                end
+
+
+        squadTooFarDelayAttack:
+        set WMEMBUFF_IN 0
+        op add WMEM_ADDR SQUADADDR 4 #lCommand 1
+        op add reti @counter 2
+        jump doWMEMwrite always 0 0
+        set reti 0
+        set potatotestingvar2 true
         jump controlKAI always 0 0
+
     end
 
     followSquad:        #Otherwise, just follow orders.
@@ -133,6 +189,14 @@ roaming:
         set u_leader WMEMBUFF_OUT
         sensor leaderX u_leader @x
         sensor leaderY u_leader @y
+        sensor hereX @unit @x    # Find the current unit position
+        sensor hereY @unit @y
+        op sub aX leaderX hereX     # Calculate weighted distance to Leader
+        op pow aXsq aX 2
+        op sub bY leaderY hereY 
+        op pow bYsq bY 2
+        op add c2 aXsq bYsq
+        op sqrt leaderDist c2 c2
 
         op add WMEM_ADDR SQUADADDR 3 #Check squad validity
         op add reti @counter 2
@@ -141,8 +205,8 @@ roaming:
 
         jump squadValid equal WMEMBUFF_OUT true
             sensor originalBitpack @unit @flag #If the squad's invalid, delete your own squadaddr.
-            op mod newBitpack originalBitpack 1000000
-            ucontrol flag newBitpack
+            op mod newBitpack2 originalBitpack 1000000
+            ucontrol flag newBitpack2
             end
         squadValid:
         
@@ -159,11 +223,37 @@ roaming:
                 end
             notCloseToLeadergRegroup:
                 ucontrol pathfind leaderX leaderY
+                op add WMEM_ADDR SQUADADDR 17 #Furthest Dist From Leader
+                op add reti @counter 2
+                jump doWMEMread always 0 0
+                set reti 0
+                set sDist WMEMBUFF_OUT
+
+                op add WMEM_ADDR SQUADADDR 18 #Furthest Unit from Leader
+                op add reti @counter 2
+                jump doWMEMread always 0 0
+                set reti 0
+
+                jump updateDistanceRegroup equal WMEMBUFF_OUT @this
+                jump updateDistanceRegroup greaterThan sDist leaderDist
+                end
+
+                updateDistanceRegroup:
+                    set WMEMBUFF_IN @this
+                    op add reti @counter 2
+                    jump doWMEMwrite always 0 0
+                    set reti 0
+
+                    op add WMEM_ADDR SQUADADDR 17 #Furthest Dist From Leader
+                    set WMEMBUFF_IN leaderDist
+                    op add reti @counter 2
+                    jump doWMEMwrite always 0 0
+                    set reti 0
                 end
         noGRegroup:
 
         op add WMEM_ADDR SQUADADDR 9 #Check for gCommand STOP
-        op add reti @counter  
+        op add reti @counter 2
         jump doWMEMread always 0 0
         set reti 0
 
@@ -189,40 +279,60 @@ roaming:
             jump doWMEMread always 0 0
             set reti 0
 
-            set commandChannel WMEMBUFF_OUT
+            op greaterThan doAttack WMEMBUFF_OUT pBias
 
-            op add WMEM_ADDR ADDR 1
-            op add reti @counter 2
-            jump doWMEMread always 0 0
-            set reti 0
-
-            jump noAttackYet greaterThan WMEMBUFF_OUT commandChannel
+            jump noAttackYet equal doAttack false
                 jump controlKAI always 0 0
             noAttackYet:
-            
-            sensor hereX @unit @x    # Find the current unit position
-            sensor hereY @unit @y
-            op sub aX leaderX hereX     # Calculate weighted distance to Leader
-            op pow aXsq aX 2
-            op sub bY leaderY hereY 
-            op pow bYsq bY 2
-            op add c2 aXsq bYsq
-            op sqrt leaderDist c2 c2
 
-            op add WMEM_ADDR SQUADADDR 17 #Furthest Unit From Leader
-            op add reti @counter 2
+            select sideRoll greaterThan pBias 50 2 0
+
+            op add WMEM_ADDR SQUADADDR 32
+            op add WMEM_ADDR WMEM_ADDR sideRoll
+            op add reti @counter 1
             jump doWMEMread always 0 0
+            set targetX WMEMBUFF_OUT
+
+            op add WMEM_ADDR SQUADADDR 33
+            op add WMEM_ADDR WMEM_ADDR sideRoll
+            op add reti @counter 1
+            jump doWMEMread always 0 0
+            set targetY WMEMBUFF_OUT
+
+            ucontrol pathfind targetX targetY
+
+            jump squadCommandDone always 0 0
+
+        squadCommandDone:
+
+        op add WMEM_ADDR SQUADADDR 17 #Furthest Dist From Leader
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+        set sDist WMEMBUFF_OUT
+
+        op add WMEM_ADDR SQUADADDR 18 #Furthest Unit from Leader
+        op add reti @counter 2
+        jump doWMEMread always 0 0
+        set reti 0
+
+        jump updateDistanceSquad equal WMEMBUFF_OUT @unit
+        jump updateDistanceSquad greaterThan leaderDist sDist 
+        end
+
+        updateDistanceSquad:
+            set WMEMBUFF_IN @unit
+            op add reti @counter 2
+            jump doWMEMwrite always 0 0
             set reti 0
 
-            jump notFurthestDelayAttack lessThan leaderDist WMEMBUFF_OUT #If you're the furthest unit, write your distance to leader.
-                set WMEMBUFF_IN leaderDist
-                op add reti @counter 2
-                jump doWMEMwrite always 0 0
-                set reti 0
-            notFurthestDelayAttack:
-
-            ucontrol approach leaderX leaderY 5
+            op add WMEM_ADDR SQUADADDR 17 #Furthest Dist From Leader
+            set WMEMBUFF_IN leaderDist
+            op add reti @counter 2
+            jump doWMEMwrite always 0 0
+            set reti 0
         end
+
 
     end
 
@@ -368,6 +478,14 @@ doCreateSquad: #SquadCreate function. Initializes all needed memory for Squad cr
 
     op sub cellSpace SQUADADDR baseSquadMemoryAddr
     op idiv cellSpace cellSpace 64 #Calculate the correct cell space based on assigned memory location
+
+    set WMEMBUFF_IN SQUADID_CAN_LEAD   #Inform everyone of Squad Type
+    op add WMEM_ADDR SQUADADDR 1
+    set reti2 reti
+    op add reti @counter 2
+    jump doWMEMwrite always 0 0
+    set reti2 0
+    set reti reti2
 
     set WMEMBUFF_IN true   #Claim the memory as Valid
     op add WMEM_ADDR SQUADADDR 3
