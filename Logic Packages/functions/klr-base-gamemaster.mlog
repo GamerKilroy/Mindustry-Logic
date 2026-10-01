@@ -48,16 +48,20 @@ jump gameStarted equal gamestate 3 #Gametime checks
 end
 
 gameInit:
-    print "Game initializing, please wait..."
+    print "OB-AI Initializing"
+    print "Please wait."
     message mission 2
     setrule currentWaveTime 3600
+
+    print "Game initializing. If this is stuck, warn the map maker!"
+    makemarker text 100 rawXbase markerY true
+    setmarker flushText 100 0
 
     wait 1
 
     set gameDifficulty 1
     set savedWaveTime @waveTime
     
-
     sensor rawXbase display1 @x #base display touch calculation  
     sensor rawYbase display1 @y
 
@@ -65,10 +69,6 @@ gameInit:
     op sub touchYbase rawYbase 1
 
     op sub markerY rawYbase 2
-
-    print "Game initializing. If this is stuck, warn the map maker!"
-    makemarker text 100 rawXbase markerY true
-    setmarker flushText 100 0
 
     setprop @buildSpeed @clientUnit -1
     setrule buildSpeed 0 @sharded
@@ -117,14 +117,20 @@ beforeGameStart:
     jump textDoneBGS always 0 0
 
     mission1text:
-        print "Wave timer inactive"
-        message mission 2
+        print "OB-AI Ready"
+        print "Waves Paused"
+        print "Wave Timer: {0}s"
+        format currentWT
+        message mission 0
         jump textDoneBGS always 0 0 
         
 
     mission2text:
-        print "Select difficulty and START"
-        message mission 2
+        print "Use the screen"
+        print "to start the game"
+        print "Difficulty: {0}"
+        format gameDifficulty
+        message mission 0
         jump textDoneBGS always 0 0
 
     textDoneBGS:
@@ -193,6 +199,7 @@ runningConfig:
     setmarker remove 100
     print "Game started, have fun!"
     message notify 2
+    setrule currentWaveTime savedWaveTime
 end
 
 gameStarted:
@@ -290,7 +297,7 @@ drawScreen:
     draw rect 1 40 18 25
     draw col GREEN_BRIGHT
     draw lineRect 1 40 18 25
-    #draw line 12 96 34 158  
+    draw line 5 44 15 61
 
     draw col YELLOW_DARK
     jump normalColorNotSelected notEqual gameDifficulty 1
@@ -301,8 +308,8 @@ drawScreen:
     draw rect 21 40 18 25
     draw col YELLOW_BRIGHT
     draw lineRect 21 40 18 25
-    #draw line 58 96 76 158 
-    #draw line 62 96 80 158
+    draw line 23 44 33 61
+    draw line 27 44 37 61
 
     draw col RED_DARK
     jump hardColorNotSelected notEqual gameDifficulty 2
@@ -313,9 +320,9 @@ drawScreen:
     draw rect 41 40 18 25 
     draw col RED_BRIGHT
     draw lineRect 41 40 18 25 
-    #draw line 88 96 106 154 
-    #draw line 92 92 110 158
-    #draw line 96 96 114 154
+    draw line 43 44 53 61
+    draw line 45 44 55 61
+    draw line 47 44 57 61
 
     draw col PURPLE_DARK
     jump eradColorNotSelected notEqual gameDifficulty 3
@@ -326,10 +333,10 @@ drawScreen:
     draw rect 61 40 18 25
     draw col PURPLE_BRIGHT
     draw lineRect 61 40 18 25
-    #draw line 128 96 146 154 
-    #draw line 132 92 150 158
-    #draw line 136 96 154 154
-    #draw line 126 160 156 90
+    draw line 63 44 73 61
+    draw line 65 44 75 61
+    draw line 67 44 77 61
+    draw line 75 46 65 59
 
     jump skipBanner equal gameDifficulty 4
         draw stroke 20
@@ -340,8 +347,12 @@ drawScreen:
     draw col COLOR_SELECTED
     draw stroke 2
     draw lineRect 7 7 65 26
+    draw stroke 1
+    draw lineRect 10 10 62 23
+    draw stroke 2
+    draw col IS_SELECTED
     print "START"
-    draw print 38 22 @center
+    draw print 38 21 @center
     draw col 80 80 80
     draw rect 7 7 65 26
 
