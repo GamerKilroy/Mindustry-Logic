@@ -117,17 +117,18 @@ beforeGameStart:
     jump textDoneBGS always 0 0
 
     mission1text:
-        print "OB-AI Ready"
-        print "Waves Paused"
+        print "OB-AI Ready\n"
+        print "Waves Paused\n"
         print "Wave Timer: {0}s"
+        op floor currentWT currentWT
         format currentWT
         message mission 0
         jump textDoneBGS always 0 0 
         
 
     mission2text:
-        print "Use the screen"
-        print "to start the game"
+        print "Use the screen\n"
+        print "to start the game\n"
         print "Difficulty: {0}"
         format gameDifficulty
         message mission 0
