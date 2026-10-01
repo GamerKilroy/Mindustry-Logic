@@ -83,7 +83,7 @@ init:
         set WMEMBUFF_IN pBias
         op add reti @counter 2
         jump doWMEMwrite always 0 0
-
+        set reti 0
     end
  
 noRam:
