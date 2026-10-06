@@ -7,8 +7,8 @@ set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set SQUADLOOKUP cell1 #Squad Lookup Initialization
-set SQUADID_CAN_JOIN 0x0022
-set SQUADID_CAN_LEAD 0x0020
+set SQUADID_CAN_JOIN 0x0012
+set SQUADID_CAN_LEAD 0x0010
 
 set coreWeight 0.5    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
 set turretWeight 3  # For instance, genWeight=5 turretWeight=1 means it needs to be 5 times closer to a turret than a generator to target it.
@@ -268,7 +268,7 @@ roaming:
 
         set currSquadType WMEMBUFF_OUT
 
-        jump delayAttackSquadCommand equal currSquadType 0x0020
+        jump delayAttackSquadCommand equal currSquadType 0x0010
         end
 
         delayAttackSquadCommand:
@@ -299,7 +299,7 @@ roaming:
         set reti 0
 
         
-        jump updateDistanceSquad greaterThan sDist leaderDist
+        jump updateDistanceSquad greaterThan leaderDist sDist 
         jump updateDistanceSquad equal WMEMBUFF_OUT @unit
         end
 

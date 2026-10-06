@@ -1,0 +1,14 @@
+
+rotSanitize:
+
+    jump overflowRot greaterThan rawRot 360
+    jump underflowRot lessThan rawRot 0
+    set retRot rawRot
+    set @counter reti
+    overflowRot:
+        op sub retRot rawRot 360
+        set @counter reti
+    underflowRot: 
+        op add retRot rawRot 360
+        set @counter reti
+end

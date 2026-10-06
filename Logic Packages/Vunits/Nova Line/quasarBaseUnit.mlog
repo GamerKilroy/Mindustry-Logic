@@ -7,7 +7,7 @@ set WMEM processor1   #RAM Initialization - Do not touch
 draw triangle WMEM_ADDR WMEMBUFF_IN WMEMBUFF_LEN WMEMBUFF_OUT ramACK d1
 
 set SQUADLOOKUP cell1 #Squad Lookup Initialization
-set SQUADID_CAN_JOIN 0x0020
+set SQUADID_CAN_JOIN 0x0012
 set SQUADID_CAN_LEAD 0x0000
 
 set coreWeight 0.5    # Set the weights. Lower = Less Likely. 0 = Never. Set it high enough and it will ignore closer targets if needed.
@@ -17,7 +17,7 @@ set factWeight 1    # Default has all at 1, meaning it will target everything eq
 set reactWeight 1
 set unitWeight 0
 
-set weaponRange 15      # Main weapon range, this you want to use against buildings. Will be used for big units too.
+set weaponRange 3      # Main weapon range, this you want to use against buildings. Will be used for big units too.
 set PDSRange 3         # PDS weapons range, where available. This is the range at which you want to shoot at most units.
 set PDSThreshold 9999    # If the Target Enemy Unit has more Max HP than this threshold, then it will use main weapons calculations, not PDS.
 # At the default of 500, you start hitting T2 ground units with main, and T3 air units with main.
@@ -144,7 +144,7 @@ roaming:
             end
         lnoGRegroup:
 
-        ucontrol within targetX targetY 26 startDelayAttackRange
+        ucontrol within targetX targetY 32 startDelayAttackRange
         jump squadTooFarDelayAttack equal startDelayAttackRange false
 
             set WMEMBUFF_IN 1
@@ -268,7 +268,7 @@ roaming:
 
         set currSquadType WMEMBUFF_OUT
 
-        jump delayAttackSquadCommand equal currSquadType 0x0020
+        jump delayAttackSquadCommand equal currSquadType 0x0010
         end
 
         delayAttackSquadCommand:
@@ -298,8 +298,9 @@ roaming:
         jump doWMEMread always 0 0
         set reti 0
 
+        
+        jump updateDistanceSquad greaterThan leaderDist sDist 
         jump updateDistanceSquad equal WMEMBUFF_OUT @unit
-        jump updateDistanceSquad greaterThan sDist leaderDist
         end
 
         updateDistanceSquad:
